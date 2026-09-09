@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - NIST CSF CPTM</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        /* Paleta CPTM baseada na imagem de referência */
+        :root {
+            --cptm-red: #D32F2F;
+            --cptm-gray-light: #F5F5F5;
+            --cptm-gray-dark: #333333;
+            --cptm-white: #FFFFFF;
+            --cptm-green: #2E7D32;
+        }
+
+        body {
+            background-color: var(--cptm-gray-light);
+            color: var(--cptm-gray-dark);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background-color: var(--cptm-white);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--cptm-red) !important;
+        }
+
+        .nav-link {
+            color: var(--cptm-gray-dark) !important;
+            font-weight: 500;
+        }
+        
+        .nav-link:hover {
+            color: var(--cptm-red) !important;
+        }
+
+        /* Título com barra vermelha ao lado */
+        .page-title {
+            border-left: 4px solid var(--cptm-red);
+            padding-left: 10px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        /* Cards minimalistas */
+        .card-cptm {
+            background: var(--cptm-white);
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        .card-cptm:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn-cptm {
+            border: 1px solid var(--cptm-red);
+            color: var(--cptm-red);
+            background: transparent;
+            border-radius: 20px;
+            padding: 5px 20px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-cptm:hover {
+            background: var(--cptm-red);
+            color: var(--cptm-white);
+        }
+
+        footer {
+            background-color: var(--cptm-white);
+            border-top: 1px solid #E0E0E0;
+            padding: 20px 0;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-light mb-3">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">SISTEMA NIST CSF</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-link text-dark">
+                            <strong>Usuário:</strong> @User.Identity?.Name
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav">
+                        @if (User.IsInRole("Administrador"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Index">Administração</a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Editor") || User.IsInRole("Administrador"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Cenario" asp-action="Alvo">Cenário Alvo</a>
+                            </li>
+                        }
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Cenario" asp-action="Atual">Cenário Atual</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Dashboard" asp-action="Index">Dashboards</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer>
+        <div class="container text-center text-muted">
+            &copy; 2026 - Maturidade Organizacional NIST CSF - CPTM
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
