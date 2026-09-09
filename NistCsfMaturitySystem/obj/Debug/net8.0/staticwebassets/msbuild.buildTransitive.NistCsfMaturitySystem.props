@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\buildMultiTargeting\NistCsfMaturitySystem.props" />
-</Project>
