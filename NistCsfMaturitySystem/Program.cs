@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.EntityFrameworkCore;
 using NistCsfMaturitySystem.Data;
+using NistCsfMaturitySystem.Services;
 using NistCsfMaturitySystem.Middleware;
 using Microsoft.AspNetCore.Authentication;
 
@@ -24,6 +25,7 @@ builder.Services.AddScoped<IClaimsTransformation, ClaimsTransformer>();
 
 // Registro do DbContext Oracle e Audit Interceptor
 builder.Services.AddScoped<AuditInterceptor>();
+builder.Services.AddScoped<EfetivacaoService>();
 
 builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
 {

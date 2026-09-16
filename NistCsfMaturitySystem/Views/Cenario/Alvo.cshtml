@@ -1,0 +1,257 @@
+@model NistCsfMaturitySystem.ViewModels.CenarioAlvoViewModel
+
+@{
+    ViewData["Title"] = "Edição do Cenário Alvo";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title">@Model.Cenario.Nome <span class="badge bg-warning text-dark fs-6 ms-2">@Model.Cenario.Status</span></h2>
+    @if (Model.Cenario.Status == "EM_ELABORACAO")
+    {
+        <button class="btn btn-success" onclick="solicitarAprovacao(@Model.Cenario.Id)">
+            <span id="btnSubmitSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+            Solicitar Efetivação
+        </button>
+    }
+</div>
+
+<p class="text-muted">Preencha as avaliações de maturidade e os gaps para cada subcategoria. As alterações são salvas automaticamente em rascunho.</p>
+
+<div class="accordion" id="accordionNist">
+    @foreach (var funcao in Model.Funcoes)
+    {
+        <div class="accordion-item mb-3 border-0 shadow-sm">
+            <h2 class="accordion-header" id="heading_@funcao.Codigo">
+                <button class="accordion-button collapsed fw-bold text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_@funcao.Codigo" style="background-color: @funcao.Cor; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                    @funcao.Codigo - @funcao.Nome
+                </button>
+            </h2>
+            <div id="collapse_@funcao.Codigo" class="accordion-collapse collapse" data-bs-parent="#accordionNist">
+                <div class="accordion-body p-0">
+                    
+                    @foreach (var categoria in funcao.Categorias)
+                    {
+                        <div class="bg-light p-3 border-bottom border-2 border-white">
+                            <h5 class="text-dark fw-bold mb-1">@categoria.Codigo - @categoria.Nome</h5>
+                            <p class="small text-muted mb-3">@categoria.Descricao</p>
+
+                            <div class="list-group">
+                                @foreach (var subcat in categoria.Subcategorias)
+                                {
+                                    <div class="list-group-item list-group-item-action flex-column align-items-start">
+                                        <div class="d-flex w-100 justify-content-between mb-2">
+                                            <h6 class="mb-1 fw-bold">@subcat.Codigo</h6>
+                                            <span class="badge" id="badge_status_@subcat.Id">
+                                                @(string.IsNullOrEmpty(subcat.Avaliacao?.StatusMaturidade) ? "NÃO AVALIADO" : subcat.Avaliacao.StatusMaturidade)
+                                            </span>
+                                        </div>
+                                        <p class="mb-3 small">@subcat.Descricao</p>
+                                        
+                                        <!-- Formulário Interno -->
+                                        <div class="row g-2 align-items-end bg-white p-3 border rounded">
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Maturidade Alvo</label>
+                                                <select class="form-select form-select-sm" id="maturidade_@subcat.Id">
+                                                    <option value="">Selecione...</option>
+                                                    <option value="NAO_ATENDIDO" selected="@(subcat.Avaliacao?.StatusMaturidade == "NAO_ATENDIDO")">Não Atendido</option>
+                                                    <option value="DEFICITARIAMENTE_ATENDIDO" selected="@(subcat.Avaliacao?.StatusMaturidade == "DEFICITARIAMENTE_ATENDIDO")">Deficitariamente</option>
+                                                    <option value="PARCIALMENTE_ATENDIDO" selected="@(subcat.Avaliacao?.StatusMaturidade == "PARCIALMENTE_ATENDIDO")">Parcialmente</option>
+                                                    <option value="RAZOAVELMENTE_ATENDIDO" selected="@(subcat.Avaliacao?.StatusMaturidade == "RAZOAVELMENTE_ATENDIDO")">Razoavelmente</option>
+                                                    <option value="ATENDIDO" selected="@(subcat.Avaliacao?.StatusMaturidade == "ATENDIDO")">Atendido</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Prioridade</label>
+                                                <select class="form-select form-select-sm" id="prioridade_@subcat.Id">
+                                                    <option value="BAIXA" selected="@(subcat.Avaliacao?.Prioridade == "BAIXA")">Baixa</option>
+                                                    <option value="MEDIA" selected="@(subcat.Avaliacao?.Prioridade == "MEDIA")">Média</option>
+                                                    <option value="ALTA" selected="@(subcat.Avaliacao?.Prioridade == "ALTA")">Alta</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Justificativa / GAP</label>
+                                                <input type="text" class="form-control form-control-sm" id="justif_@subcat.Id" value="@subcat.Avaliacao?.Justificativa" placeholder="Opcional..." />
+                                            </div>
+                                            <div class="col-md-2 text-end d-flex flex-column justify-content-end align-items-end">
+                                                <button class="btn btn-sm btn-cptm w-100 mb-1" onclick="salvarSubcategoria(@Model.Cenario.Id, @subcat.Id)">
+                                                    <span id="spinner_@subcat.Id" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                                    Salvar Avaliação
+                                                </button>
+                                                <!-- O ID da avaliação é mapeado via string interpolation. Se for 0, o JS alerta -->
+                                                <button class="btn btn-sm btn-outline-secondary w-100" onclick="abrirModalPlanos(@(subcat.Avaliacao?.Id ?? 0), '@subcat.Codigo')">
+                                                    Planos de Ação
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Modal Planos de Ação -->
+<div class="modal fade" id="modalPlanosAcao" tabindex="-1" aria-labelledby="modalPlanosTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="modalPlanosTitle">Planos de Ação</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modalPlanosContent">
+                <!-- Conteúdo carregado via AJAX da Partial View _ListaPlanos -->
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Função AJAX / Fetch API (Requisito de chamadas assíncronas no frontend)
+        async function salvarSubcategoria(cenarioId, subcategoriaId) {
+            const statusM = document.getElementById(`maturidade_${subcategoriaId}`).value;
+            const prioridade = document.getElementById(`prioridade_${subcategoriaId}`).value;
+            const justif = document.getElementById(`justif_${subcategoriaId}`).value;
+            
+            const spinner = document.getElementById(`spinner_${subcategoriaId}`);
+            const badge = document.getElementById(`badge_status_${subcategoriaId}`);
+            
+            if(!statusM) {
+                alert("Por favor, selecione a Maturidade Alvo antes de salvar.");
+                return;
+            }
+
+            spinner.classList.remove('d-none');
+
+            const payload = {
+                CenarioId: cenarioId,
+                SubcategoriaId: subcategoriaId,
+                StatusMaturidade: statusM,
+                Prioridade: prioridade,
+                Justificativa: justif
+            };
+
+            try {
+                const response = await fetch('/Cenario/SalvarAvaliacao', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Update UI Badge
+                    badge.innerText = statusM;
+                    badge.className = 'badge bg-success';
+                    
+                    // Flash effect temporário no input
+                    const btn = spinner.parentElement;
+                    btn.classList.add('btn-success');
+                    btn.classList.remove('btn-cptm');
+                    setTimeout(() => {
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-cptm');
+                    }, 1500);
+                } else {
+                    alert("Erro: " + result.message);
+                }
+            } catch (error) {
+                alert("Falha na comunicação com o servidor.");
+                console.error(error);
+            } finally {
+                spinner.classList.add('d-none');
+            }
+        }
+
+        async function solicitarAprovacao(cenarioId) {
+            if(confirm("Deseja submeter o cenário alvo atual para aprovação e efetivação?")) {
+                const spinner = document.getElementById('btnSubmitSpinner');
+                if (spinner) spinner.classList.remove('d-none');
+                
+                const res = await fetch(`/Cenario/SubmeterAprovacao?id=${cenarioId}`, { method: 'POST' });
+                const result = await res.json();
+                
+                if (spinner) spinner.classList.add('d-none');
+                
+                if (result.success) {
+                    alert("Cenário submetido com sucesso! O Administrador já pode revisá-lo.");
+                    window.location.reload();
+                } else {
+                    alert("Atenção: " + result.message);
+                }
+            }
+        }
+
+        // --- LÓGICA DE PLANOS DE AÇÃO ---
+        async function abrirModalPlanos(avaliacaoId, codigoSubcat) {
+            // Se a avaliação não existe (o usuário nunca clicou em Salvar na subcategoria), avaliacaoId será 0
+            if (!avaliacaoId || avaliacaoId == 0) {
+                alert("Você precisa 'Salvar' a maturidade alvo desta subcategoria primeiro para poder adicionar um Plano de Ação!");
+                return;
+            }
+
+            document.getElementById('modalPlanosTitle').innerText = 'Planos de Ação - ' + codigoSubcat;
+            
+            // Buscar lista de planos
+            const res = await fetch(`/PlanoAcao/ListarPorAvaliacao?avaliacaoId=${avaliacaoId}`);
+            const html = await res.text();
+            document.getElementById('modalPlanosContent').innerHTML = html;
+            
+            var modal = new bootstrap.Modal(document.getElementById('modalPlanosAcao'));
+            modal.show();
+        }
+
+        async function recarregarListaPlanos(avaliacaoId) {
+            const res = await fetch(`/PlanoAcao/ListarPorAvaliacao?avaliacaoId=${avaliacaoId}`);
+            const html = await res.text();
+            document.getElementById('modalPlanosContent').innerHTML = html;
+        }
+
+        async function salvarNovoPlano(avaliacaoId) {
+            const desc = document.getElementById('novoPlanoDescricao').value;
+            const resp = document.getElementById('novoPlanoResp').value;
+            const prazo = document.getElementById('novoPlanoPrazo').value;
+
+            if (!desc) { alert("A descrição é obrigatória."); return; }
+
+            const payload = { AvaliacaoId: avaliacaoId, Descricao: desc, Responsavel: resp, Prazo: prazo };
+            
+            const res = await fetch('/PlanoAcao/Adicionar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                await recarregarListaPlanos(avaliacaoId);
+            } else {
+                alert(await res.text());
+            }
+        }
+
+        async function alterarStatusPlano(planoId, novoStatus) {
+            const res = await fetch(`/PlanoAcao/AtualizarStatus?planoId=${planoId}&novoStatus=${novoStatus}`, { method: 'POST' });
+            if (!res.ok) alert("Erro ao atualizar status.");
+        }
+
+        async function excluirPlano(planoId, avaliacaoId) {
+            if(confirm("Excluir este plano de ação?")) {
+                const res = await fetch(`/PlanoAcao/Excluir?planoId=${planoId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    await recarregarListaPlanos(avaliacaoId);
+                }
+            }
+        }
+    </script>
+}

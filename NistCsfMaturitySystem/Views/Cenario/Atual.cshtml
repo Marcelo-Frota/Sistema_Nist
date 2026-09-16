@@ -1,0 +1,131 @@
+@model NistCsfMaturitySystem.ViewModels.CenarioAlvoViewModel
+
+@{
+    ViewData["Title"] = "Cenário Atual (Vigente)";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title text-success">
+        <i class="bi bi-shield-check"></i> @Model.Cenario.Nome
+        @if(Model.Cenario.Id != 0) {
+            <span class="badge bg-success fs-6 ms-2">VIGENTE</span>
+        }
+    </h2>
+    <span class="text-muted">Efetivado em: @(Model.Cenario.DataEfetivacao?.ToString("dd/MM/yyyy") ?? "N/A")</span>
+</div>
+
+@if (ViewBag.Message != null)
+{
+    <div class="alert alert-info">@ViewBag.Message</div>
+}
+
+@if (Model.Funcoes != null && Model.Funcoes.Any())
+{
+    <p class="text-muted">Abaixo estão os níveis de maturidade e controles oficialmente implementados e auditados pela corporação. (Visão Somente Leitura).</p>
+
+    <div class="accordion" id="accordionNistAtual">
+        @foreach (var funcao in Model.Funcoes)
+        {
+            <div class="accordion-item mb-3 border-0 shadow-sm">
+                <h2 class="accordion-header" id="heading_@funcao.Codigo">
+                    <button class="accordion-button collapsed fw-bold text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_@funcao.Codigo" style="background-color: @funcao.Cor; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                        @funcao.Codigo - @funcao.Nome
+                    </button>
+                </h2>
+                <div id="collapse_@funcao.Codigo" class="accordion-collapse collapse" data-bs-parent="#accordionNistAtual">
+                    <div class="accordion-body p-0">
+                        
+                        @foreach (var categoria in funcao.Categorias)
+                        {
+                            <div class="bg-light p-3 border-bottom border-2 border-white">
+                                <h5 class="text-dark fw-bold mb-1">@categoria.Codigo - @categoria.Nome</h5>
+                                <p class="small text-muted mb-3">@categoria.Descricao</p>
+
+                                <div class="list-group">
+                                    @foreach (var subcat in categoria.Subcategorias)
+                                    {
+                                        var badgeColor = subcat.Avaliacao?.StatusMaturidade switch {
+                                            "ATENDIDO" => "bg-success",
+                                            "RAZOAVELMENTE_ATENDIDO" => "bg-info text-dark",
+                                            "PARCIALMENTE_ATENDIDO" => "bg-warning text-dark",
+                                            "DEFICITARIAMENTE_ATENDIDO" => "bg-orange",
+                                            "NAO_ATENDIDO" => "bg-danger",
+                                            _ => "bg-secondary"
+                                        };
+
+                                        <div class="list-group-item list-group-item-action flex-column align-items-start bg-white mb-2 border rounded">
+                                            <div class="d-flex w-100 justify-content-between mb-2">
+                                                <h6 class="mb-1 fw-bold text-primary">@subcat.Codigo</h6>
+                                                <span class="badge @badgeColor fs-6 shadow-sm">
+                                                    @(string.IsNullOrEmpty(subcat.Avaliacao?.StatusMaturidade) ? "NÃO AVALIADO" : subcat.Avaliacao.StatusMaturidade.Replace("_", " "))
+                                                </span>
+                                            </div>
+                                            <p class="mb-3 small">@subcat.Descricao</p>
+                                            
+                                            @if (subcat.Avaliacao != null)
+                                            {
+                                                <div class="row g-2 mt-2 pt-2 border-top">
+                                                    <div class="col-md-4">
+                                                        <span class="small fw-bold text-muted">Prioridade: </span>
+                                                        <span class="small">@subcat.Avaliacao.Prioridade</span>
+                                                    </div>
+                                                    <div class="col-md-8">
+                                                        <span class="small fw-bold text-muted">Justificativa / GAP: </span>
+                                                        <span class="small fst-italic">@(string.IsNullOrEmpty(subcat.Avaliacao.Justificativa) ? "Sem justificativa." : subcat.Avaliacao.Justificativa)</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Botões de Ação Somente Leitura (Evidências e Planos) -->
+                                                <div class="mt-3 text-end">
+                                                    <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalPlanos(@subcat.Avaliacao.Id, '@subcat.Codigo')">
+                                                        <i class="bi bi-list-task"></i> Ver Planos de Ação
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="alert('Funcionalidade de Download de Evidências Anexas')">
+                                                        <i class="bi bi-paperclip"></i> Evidências (3)
+                                                    </button>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Modal Planos de Ação (Reaproveitado, porém em modo leitura a depender da lógica) -->
+<div class="modal fade" id="modalPlanosAcao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="modalPlanosTitle">Planos de Ação Registrados</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalPlanosContent">
+                <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function abrirModalPlanos(avaliacaoId, codigoSubcat) {
+            document.getElementById('modalPlanosTitle').innerText = 'Planos de Ação - ' + codigoSubcat;
+            const res = await fetch(`/PlanoAcao/ListarPorAvaliacao?avaliacaoId=${avaliacaoId}`);
+            let html = await res.text();
+            
+            // Hack simples para remover os controles de formulário e deixar apenas a lista em modo leitura
+            html = html.replace(/<div class="mb-3">[\s\S]*?<\/div>/, ''); // Remove input group de adicionar
+            html = html.replace(/<select[\s\S]*?<\/select>/g, '<span class="badge bg-secondary">Visualizando</span>'); // Substitui selects
+            html = html.replace(/<button class="btn btn-sm btn-link text-danger[\s\S]*?<\/button>/g, ''); // Remove botão excluir
+            
+            document.getElementById('modalPlanosContent').innerHTML = html;
+            new bootstrap.Modal(document.getElementById('modalPlanosAcao')).show();
+        }
+    </script>
+}

@@ -54,6 +54,21 @@ namespace NistCsfMaturitySystem.Middleware
                 }
             }
 
+            // --- MOCK TEMPORÁRIO PARA DESENVOLVIMENTO ---
+            // Como estamos rodando localmente (talvez sem o banco preenchido), 
+            // vamos garantir que você (Marcelo) tenha acesso total, incluindo Auditor
+            if (identity.Name != null && identity.Name.Contains("marcelofro", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!newIdentity.HasClaim(c => c.Value == "Administrador"))
+                    newIdentity.AddClaim(new Claim(ClaimTypes.Role, "Administrador"));
+                
+                if (!newIdentity.HasClaim(c => c.Value == "Editor"))
+                    newIdentity.AddClaim(new Claim(ClaimTypes.Role, "Editor"));
+
+                if (!newIdentity.HasClaim(c => c.Value == "Auditor"))
+                    newIdentity.AddClaim(new Claim(ClaimTypes.Role, "Auditor"));
+            }
+
             return clone;
         }
     }

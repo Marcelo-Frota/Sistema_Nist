@@ -1,0 +1,59 @@
+@model NistCsfMaturitySystem.Models.Cenario
+
+@{
+    ViewData["Title"] = "Revisar e Aprovar Cenário Alvo";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title text-danger">Painel do Administrador - Revisão Final</h2>
+</div>
+
+<div class="alert alert-warning border-warning">
+    <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Atenção: Ação Irreversível</h4>
+    <p>Ao aprovar este cenário (<strong>@Model.Nome</strong>), ele se tornará o novo <strong>Cenário Atual (Vigente)</strong> da corporação. O cenário vigente anterior será permanentemente arquivado para fins de auditoria histórica.</p>
+    <hr>
+    <p class="mb-0 fw-bold">O progresso de avaliação deste cenário está em: @ViewBag.Progresso%</p>
+</div>
+
+@if (TempData["Erro"] != null)
+{
+    <div class="alert alert-danger">@TempData["Erro"]</div>
+}
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Resumo do Cenário: @Model.Nome</h5>
+        <ul class="list-group list-group-flush mb-4">
+            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                Data de Criação:
+                <span class="badge bg-secondary rounded-pill">@Model.DataCriacao.ToString("dd/MM/yyyy HH:mm")</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                Itens Avaliados:
+                <span class="badge bg-primary rounded-pill">@Model.Avaliacoes.Count</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                Gaps "Não Atendidos":
+                <span class="badge bg-danger rounded-pill">@Model.Avaliacoes.Count(a => a.StatusMaturidade == "NAO_ATENDIDO")</span>
+            </li>
+        </ul>
+
+        <div class="d-flex gap-3 justify-content-end">
+            <!-- Botão Rejeitar -->
+            <form asp-action="Rejeitar" asp-controller="Aprovacao" method="post" onsubmit="return confirm('Tem certeza que deseja DEVOLVER este cenário para os Editores?');">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-outline-danger">
+                    Devolver / Rejeitar
+                </button>
+            </form>
+
+            <!-- Botão Aprovar e Efetivar -->
+            <form asp-action="Efetivar" asp-controller="Aprovacao" method="post" onsubmit="return confirm('Você está prestes a APROVAR e EFETIVAR o novo Baseline de Segurança. Confirma?');">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-success fw-bold px-4">
+                    <i class="bi bi-check-circle"></i> Aprovar e Efetivar Cenário
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

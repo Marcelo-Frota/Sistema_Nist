@@ -18,6 +18,7 @@ namespace NistCsfMaturitySystem.Data
         public DbSet<NistExemploImplementacao> NistExemplosImplementacao { get; set; }
         public DbSet<Cenario> Cenarios { get; set; }
         public DbSet<AvaliacaoSubcategoria> AvaliacoesSubcategoria { get; set; }
+        public DbSet<PlanoAcao> PlanosAcao { get; set; }
         public DbSet<AuditoriaLog> AuditoriaLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -1,87 +1,133 @@
+@model NistCsfMaturitySystem.ViewModels.DashboardViewModel
+
 @{
-    ViewData["Title"] = "Página Inicial";
+    ViewData["Title"] = "Painel Executivo";
 }
 
-<h2 class="page-title">SITUAÇÃO DOS CENÁRIOS</h2>
-<div class="row text-center mb-5">
-    <div class="col-md-3">
-        <div class="card-cptm">
-            <h5>Cenário Vigente</h5>
-            <div class="mt-3">
-                <span class="badge bg-success">Operação Normal</span>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title">Dashboard NIST CSF</h2>
+    <span class="badge bg-secondary fs-6">Exibindo: @Model.NomeCenarioAtual</span>
+</div>
+
+<!-- Key Performance Indicators (Cards) -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-primary text-white h-100">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase fw-bold opacity-75">Subcategorias Avaliadas</h6>
+                <h2 class="display-4 fw-bold mb-0">@Model.SubcategoriasAvaliadas <span class="fs-4 opacity-50">/ @Model.TotalSubcategorias</span></h2>
             </div>
-            <small class="text-muted mt-2">Atualizado em 01/09/2026</small>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card-cptm">
-            <h5>Cenário Alvo (Em elaboração)</h5>
-            <div class="mt-3">
-                <span class="badge bg-warning text-dark">Em Análise</span>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-success text-white h-100">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase fw-bold opacity-75">Itens Atendidos (Maturidade)</h6>
+                <h2 class="display-4 fw-bold mb-0">@Model.QtdAtendido</h2>
             </div>
-            <small class="text-muted mt-2">Previsão: 15/10/2026</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-danger text-white h-100">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase fw-bold opacity-75">Planos de Ação Pendentes</h6>
+                <h2 class="display-4 fw-bold mb-0">@Model.PlanosAcaoPendentes</h2>
+            </div>
         </div>
     </div>
 </div>
 
-<h2 class="page-title">NIST CSF 2.0 - FUNÇÕES</h2>
-<div class="row mb-5">
-    <div class="col-md-4 mb-4">
-        <div class="card-cptm">
-            <h3>&#128202;</h3> <!-- Ícone placeholder -->
-            <h5>GOVERNAR (GV)</h5>
-            <p class="text-muted small">Estratégia, Políticas e Avaliação</p>
+<!-- Charts Row -->
+<div class="row">
+    <!-- Radar Chart: Maturidade por Função -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 pt-4 pb-0">
+                <h5 class="card-title fw-bold">Maturidade por Função (%)</h5>
+            </div>
+            <div class="card-body d-flex justify-content-center">
+                <canvas id="radarChart" style="max-height: 350px;"></canvas>
+            </div>
         </div>
     </div>
-    <div class="col-md-4 mb-4">
-        <div class="card-cptm">
-            <h3>&#128269;</h3>
-            <h5>IDENTIFICAR (ID)</h5>
-            <p class="text-muted small">Ativos, Riscos e Fornecedores</p>
-        </div>
-    </div>
-    <div class="col-md-4 mb-4">
-        <div class="card-cptm">
-            <h3>&#128373;</h3>
-            <h5>PROTEGER (PR)</h5>
-            <p class="text-muted small">Controle de Acesso e Treinamento</p>
-        </div>
-    </div>
-    <div class="col-md-4 mb-4">
-        <div class="card-cptm">
-            <h3>&#128065;</h3>
-            <h5>DETECTAR (DE)</h5>
-            <p class="text-muted small">Monitoramento e Anomalias</p>
-        </div>
-    </div>
-    <div class="col-md-4 mb-4">
-        <div class="card-cptm">
-            <h3>&#9888;</h3>
-            <h5>RESPONDER (RS)</h5>
-            <p class="text-muted small">Incidentes e Comunicação</p>
-        </div>
-    </div>
-    <div class="col-md-4 mb-4">
-        <div class="card-cptm">
-            <h3>&#8634;</h3>
-            <h5>RECUPERAR (RC)</h5>
-            <p class="text-muted small">Resiliência e Restauração</p>
+
+    <!-- Doughnut Chart: Status de Maturidade -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 pt-4 pb-0">
+                <h5 class="card-title fw-bold">Distribuição de Status (Gaps)</h5>
+            </div>
+            <div class="card-body d-flex justify-content-center">
+                <canvas id="doughnutChart" style="max-height: 350px;"></canvas>
+            </div>
         </div>
     </div>
 </div>
 
-<h2 class="page-title">AÇÕES RÁPIDAS</h2>
-<div class="row mb-5">
-    <div class="col-md-3">
-        <div class="card-cptm">
-            <h5>Dashboard Executivo</h5>
-            <a href="#" class="btn-cptm mt-3">Saiba mais</a>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card-cptm">
-            <h5>Auditoria e Logs</h5>
-            <a href="#" class="btn-cptm mt-3">Saiba mais</a>
-        </div>
-    </div>
-</div>
+@section Scripts {
+    <!-- CDN do Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Dados vindos do C# (ViewModel)
+        const labelsFuncoes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.LabelsFuncoes));
+        const valoresMaturidade = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ValoresMaturidade));
+        const coresFuncoes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CoresFuncoes));
+
+        // 1. Gráfico Radar (Maturidade)
+        const ctxRadar = document.getElementById('radarChart').getContext('2d');
+        new Chart(ctxRadar, {
+            type: 'radar',
+            data: {
+                labels: labelsFuncoes,
+                datasets: [{
+                    label: 'Maturidade (%)',
+                    data: valoresMaturidade,
+                    backgroundColor: 'rgba(211, 47, 47, 0.2)', // Vermelho CPTM com opacidade
+                    borderColor: 'rgba(211, 47, 47, 1)',
+                    pointBackgroundColor: coresFuncoes,
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: coresFuncoes,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        angleLines: { display: true },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                }
+            }
+        });
+
+        // 2. Gráfico de Rosca (Status)
+        const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
+        new Chart(ctxDoughnut, {
+            type: 'doughnut',
+            data: {
+                labels: ['Atendido', 'Razoavelmente', 'Parcialmente', 'Deficitariamente', 'Não Atendido'],
+                datasets: [{
+                    data: [@Model.QtdAtendido, @Model.QtdRazoavel, @Model.QtdParcial, @Model.QtdDeficitario, @Model.QtdNaoAtendido],
+                    backgroundColor: [
+                        '#198754', // Success (Verde)
+                        '#0dcaf0', // Info (Ciano)
+                        '#ffc107', // Warning (Amarelo)
+                        '#fd7e14', // Orange
+                        '#dc3545'  // Danger (Vermelho)
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    </script>
+}

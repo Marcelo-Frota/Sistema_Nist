@@ -1,0 +1,46 @@
+@model IEnumerable<NistCsfMaturitySystem.Models.PlanoAcao>
+
+<div class="mb-3">
+    <div class="input-group input-group-sm mb-2">
+        <input type="text" id="novoPlanoDescricao" class="form-control" placeholder="Descreva a ação de mitigação..." />
+        <input type="text" id="novoPlanoResp" class="form-control" placeholder="Responsável (ex: Área TI)" style="max-width: 150px;" />
+        <input type="date" id="novoPlanoPrazo" class="form-control" style="max-width: 130px;" />
+        <button class="btn btn-primary" type="button" onclick="salvarNovoPlano(@ViewBag.AvaliacaoId)">Adicionar</button>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-light text-center small text-muted">Nenhum plano de ação registrado para esta subcategoria.</div>
+}
+else
+{
+    <ul class="list-group list-group-flush small">
+        @foreach (var plano in Model)
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 border-bottom">
+                <div class="me-auto">
+                    <span class="fw-bold">@plano.Descricao</span><br />
+                    <span class="text-muted" style="font-size: 0.8em;">
+                        Resp: @(plano.Responsavel ?? "N/A") | 
+                        Prazo: @(plano.Prazo.HasValue ? plano.Prazo.Value.ToString("dd/MM/yyyy") : "Sem prazo")
+                    </span>
+                </div>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <select class="form-select form-select-sm border-0 bg-light" style="width: auto; font-size: 0.85em;" 
+                            onchange="alterarStatusPlano(@plano.Id, this.value)">
+                        <option value="PENDENTE" selected="@(plano.Status == "PENDENTE")">Pendente</option>
+                        <option value="EM_ANDAMENTO" selected="@(plano.Status == "EM_ANDAMENTO")">Em Andamento</option>
+                        <option value="CONCLUIDO" selected="@(plano.Status == "CONCLUIDO")">Concluído</option>
+                        <option value="CANCELADO" selected="@(plano.Status == "CANCELADO")">Cancelado</option>
+                    </select>
+                    
+                    <button class="btn btn-sm btn-link text-danger p-0 m-0" title="Excluir Plano" onclick="excluirPlano(@plano.Id, @ViewBag.AvaliacaoId)">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            </li>
+        }
+    </ul>
+}
