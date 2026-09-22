@@ -15,7 +15,7 @@
     }
 </div>
 
-<p class="text-muted">Preencha as avaliações de maturidade e os gaps para cada subcategoria. As alterações são salvas automaticamente em rascunho.</p>
+<p class="text-muted">Preencha as metas (Alvo/Target) para cada subcategoria. Esta tela define ONDE A EMPRESA QUER CHEGAR.</p>
 
 <div class="accordion" id="accordionNist">
     @foreach (var funcao in Model.Funcoes)
@@ -42,44 +42,60 @@
                                         <div class="d-flex w-100 justify-content-between mb-2">
                                             <h6 class="mb-1 fw-bold">@subcat.Codigo</h6>
                                             <span class="badge" id="badge_status_@subcat.Id">
-                                                @(string.IsNullOrEmpty(subcat.Avaliacao?.StatusMaturidade) ? "NÃO AVALIADO" : subcat.Avaliacao.StatusMaturidade)
+                                                @(string.IsNullOrEmpty(subcat.Avaliacao?.TierAlvo) ? "METAS PENDENTES" : "ALVO DEFINIDO")
                                             </span>
                                         </div>
                                         <p class="mb-3 small">@subcat.Descricao</p>
                                         
-                                        <!-- Formulário Interno -->
-                                        <div class="row g-2 align-items-end bg-white p-3 border rounded">
-                                            <div class="col-md-4">
-                                                <label class="form-label small fw-bold">Maturidade Alvo</label>
-                                                <select class="form-select form-select-sm" id="maturidade_@subcat.Id">
+                                        <!-- Formulário Alvo -->
+                                        <div class="row g-2 align-items-start bg-white p-3 border rounded shadow-sm">
+                                            
+                                            <!-- Coluna 1: Combos -->
+                                            <div class="col-md-2">
+                                                <label class="form-label small fw-bold">Prioridade Alvo</label>
+                                                <select class="form-select form-select-sm mb-2" id="prioridade_alvo_@subcat.Id">
                                                     <option value="">Selecione...</option>
-                                                    <option value="NAO_ATENDIDO" selected="@(subcat.Avaliacao?.StatusMaturidade == "NAO_ATENDIDO")">Não Atendido</option>
-                                                    <option value="DEFICITARIAMENTE_ATENDIDO" selected="@(subcat.Avaliacao?.StatusMaturidade == "DEFICITARIAMENTE_ATENDIDO")">Deficitariamente</option>
-                                                    <option value="PARCIALMENTE_ATENDIDO" selected="@(subcat.Avaliacao?.StatusMaturidade == "PARCIALMENTE_ATENDIDO")">Parcialmente</option>
-                                                    <option value="RAZOAVELMENTE_ATENDIDO" selected="@(subcat.Avaliacao?.StatusMaturidade == "RAZOAVELMENTE_ATENDIDO")">Razoavelmente</option>
-                                                    <option value="ATENDIDO" selected="@(subcat.Avaliacao?.StatusMaturidade == "ATENDIDO")">Atendido</option>
+                                                    <option value="BAIXA" selected="@(subcat.Avaliacao?.PrioridadeAlvo == "BAIXA")">Baixa</option>
+                                                    <option value="MEDIA" selected="@(subcat.Avaliacao?.PrioridadeAlvo == "MEDIA")">Média</option>
+                                                    <option value="ALTA" selected="@(subcat.Avaliacao?.PrioridadeAlvo == "ALTA")">Alta</option>
+                                                </select>
+
+                                                <label class="form-label small fw-bold">Tier CSF Alvo</label>
+                                                <select class="form-select form-select-sm" id="tier_alvo_@subcat.Id">
+                                                    <option value="">Selecione...</option>
+                                                    <option value="TIER_1" selected="@(subcat.Avaliacao?.TierAlvo == "TIER_1")">Tier 1: Parcial</option>
+                                                    <option value="TIER_2" selected="@(subcat.Avaliacao?.TierAlvo == "TIER_2")">Tier 2: Informado</option>
+                                                    <option value="TIER_3" selected="@(subcat.Avaliacao?.TierAlvo == "TIER_3")">Tier 3: Repetível</option>
+                                                    <option value="TIER_4" selected="@(subcat.Avaliacao?.TierAlvo == "TIER_4")">Tier 4: Adaptável</option>
                                                 </select>
                                             </div>
+
+                                            <!-- Coluna 2: Textos Alvo 1 -->
                                             <div class="col-md-3">
-                                                <label class="form-label small fw-bold">Prioridade</label>
-                                                <select class="form-select form-select-sm" id="prioridade_@subcat.Id">
-                                                    <option value="BAIXA" selected="@(subcat.Avaliacao?.Prioridade == "BAIXA")">Baixa</option>
-                                                    <option value="MEDIA" selected="@(subcat.Avaliacao?.Prioridade == "MEDIA")">Média</option>
-                                                    <option value="ALTA" selected="@(subcat.Avaliacao?.Prioridade == "ALTA")">Alta</option>
-                                                </select>
+                                                <label class="form-label small fw-bold">Políticas e Processos Alvo</label>
+                                                <textarea class="form-control form-control-sm mb-2" id="politicas_alvo_@subcat.Id" rows="2" placeholder="Ex: Criar política X">@subcat.Avaliacao?.PoliticasAlvo</textarea>
+
+                                                <label class="form-label small fw-bold">Práticas Internas Alvo</label>
+                                                <textarea class="form-control form-control-sm" id="praticas_alvo_@subcat.Id" rows="2" placeholder="Ex: Implementar ferramenta Y">@subcat.Avaliacao?.PraticasAlvo</textarea>
                                             </div>
+
+                                            <!-- Coluna 3: Textos Alvo 2 -->
                                             <div class="col-md-3">
-                                                <label class="form-label small fw-bold">Justificativa / GAP</label>
-                                                <input type="text" class="form-control form-control-sm" id="justif_@subcat.Id" value="@subcat.Avaliacao?.Justificativa" placeholder="Opcional..." />
+                                                <label class="form-label small fw-bold">Papéis e Responsab. Alvo</label>
+                                                <textarea class="form-control form-control-sm mb-2" id="responsabilidades_alvo_@subcat.Id" rows="2" placeholder="Ex: CISO, Red Team">@subcat.Avaliacao?.ResponsabilidadesAlvo</textarea>
+
+                                                <label class="form-label small fw-bold">Ref. Informativas Alvo</label>
+                                                <textarea class="form-control form-control-sm" id="referencias_alvo_@subcat.Id" rows="2" placeholder="Ex: ISO 27001, COBIT">@subcat.Avaliacao?.ReferenciasAlvo</textarea>
                                             </div>
-                                            <div class="col-md-2 text-end d-flex flex-column justify-content-end align-items-end">
-                                                <button class="btn btn-sm btn-cptm w-100 mb-1" onclick="salvarSubcategoria(@Model.Cenario.Id, @subcat.Id)">
+
+                                            <!-- Coluna 4: Botões -->
+                                            <div class="col-md-4 text-end d-flex flex-column justify-content-end align-items-end">
+                                                <button class="btn btn-sm btn-cptm w-100 mb-2" style="height: 40px;" onclick="salvarAlvo(@Model.Cenario.Id, @subcat.Id)">
                                                     <span id="spinner_@subcat.Id" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                                                    Salvar Avaliação
+                                                    Salvar Metas Alvo
                                                 </button>
-                                                <!-- O ID da avaliação é mapeado via string interpolation. Se for 0, o JS alerta -->
-                                                <button class="btn btn-sm btn-outline-secondary w-100" onclick="abrirModalPlanos(@(subcat.Avaliacao?.Id ?? 0), '@subcat.Codigo')">
-                                                    Planos de Ação
+                                                <button class="btn btn-sm btn-outline-secondary w-100" style="height: 40px;" onclick="abrirModalPlanos(@(subcat.Avaliacao?.Id ?? 0), '@subcat.Codigo')">
+                                                    Ver Planos de Ação
                                                 </button>
                                             </div>
                                         </div>
@@ -87,8 +103,10 @@
                                     </div>
                                 }
                             </div>
+
                         </div>
                     }
+                    
                 </div>
             </div>
         </div>
@@ -104,7 +122,6 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="modalPlanosContent">
-                <!-- Conteúdo carregado via AJAX da Partial View _ListaPlanos -->
                 <div class="text-center py-4">
                     <div class="spinner-border text-primary" role="status"></div>
                 </div>
@@ -115,47 +132,43 @@
 
 @section Scripts {
     <script>
-        // Função AJAX / Fetch API (Requisito de chamadas assíncronas no frontend)
-        async function salvarSubcategoria(cenarioId, subcategoriaId) {
-            const statusM = document.getElementById(`maturidade_${subcategoriaId}`).value;
-            const prioridade = document.getElementById(`prioridade_${subcategoriaId}`).value;
-            const justif = document.getElementById(`justif_${subcategoriaId}`).value;
+        async function salvarAlvo(cenarioId, subcategoriaId) {
+            const prioridade = document.getElementById(`prioridade_alvo_${subcategoriaId}`).value;
+            const tier = document.getElementById(`tier_alvo_${subcategoriaId}`).value;
+            const politicas = document.getElementById(`politicas_alvo_${subcategoriaId}`).value;
+            const praticas = document.getElementById(`praticas_alvo_${subcategoriaId}`).value;
+            const responsabilidades = document.getElementById(`responsabilidades_alvo_${subcategoriaId}`).value;
+            const referencias = document.getElementById(`referencias_alvo_${subcategoriaId}`).value;
             
             const spinner = document.getElementById(`spinner_${subcategoriaId}`);
             const badge = document.getElementById(`badge_status_${subcategoriaId}`);
             
-            if(!statusM) {
-                alert("Por favor, selecione a Maturidade Alvo antes de salvar.");
-                return;
-            }
-
             spinner.classList.remove('d-none');
 
             const payload = {
                 CenarioId: cenarioId,
                 SubcategoriaId: subcategoriaId,
-                StatusMaturidade: statusM,
-                Prioridade: prioridade,
-                Justificativa: justif
+                PrioridadeAlvo: prioridade,
+                TierAlvo: tier,
+                PoliticasAlvo: politicas,
+                PraticasAlvo: praticas,
+                ResponsabilidadesAlvo: responsabilidades,
+                ReferenciasAlvo: referencias
             };
 
             try {
-                const response = await fetch('/Cenario/SalvarAvaliacao', {
+                const response = await fetch('/Cenario/SalvarAlvo', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();
 
                 if (result.success) {
-                    // Update UI Badge
-                    badge.innerText = statusM;
+                    badge.innerText = "ALVO DEFINIDO";
                     badge.className = 'badge bg-success';
                     
-                    // Flash effect temporário no input
                     const btn = spinner.parentElement;
                     btn.classList.add('btn-success');
                     btn.classList.remove('btn-cptm');
@@ -167,15 +180,14 @@
                     alert("Erro: " + result.message);
                 }
             } catch (error) {
-                alert("Falha na comunicação com o servidor.");
-                console.error(error);
+                alert("Falha na comunicação.");
             } finally {
                 spinner.classList.add('d-none');
             }
         }
 
         async function solicitarAprovacao(cenarioId) {
-            if(confirm("Deseja submeter o cenário alvo atual para aprovação e efetivação?")) {
+            if(confirm("Deseja submeter o cenário alvo atual para aprovação?")) {
                 const spinner = document.getElementById('btnSubmitSpinner');
                 if (spinner) spinner.classList.remove('d-none');
                 
@@ -185,7 +197,7 @@
                 if (spinner) spinner.classList.add('d-none');
                 
                 if (result.success) {
-                    alert("Cenário submetido com sucesso! O Administrador já pode revisá-lo.");
+                    alert("Submetido! O Administrador já pode revisá-lo.");
                     window.location.reload();
                 } else {
                     alert("Atenção: " + result.message);
@@ -193,29 +205,21 @@
             }
         }
 
-        // --- LÓGICA DE PLANOS DE AÇÃO ---
         async function abrirModalPlanos(avaliacaoId, codigoSubcat) {
-            // Se a avaliação não existe (o usuário nunca clicou em Salvar na subcategoria), avaliacaoId será 0
             if (!avaliacaoId || avaliacaoId == 0) {
-                alert("Você precisa 'Salvar' a maturidade alvo desta subcategoria primeiro para poder adicionar um Plano de Ação!");
+                alert("Você precisa 'Salvar' as metas desta subcategoria primeiro para adicionar Planos de Ação!");
                 return;
             }
 
             document.getElementById('modalPlanosTitle').innerText = 'Planos de Ação - ' + codigoSubcat;
-            
-            // Buscar lista de planos
             const res = await fetch(`/PlanoAcao/ListarPorAvaliacao?avaliacaoId=${avaliacaoId}`);
-            const html = await res.text();
-            document.getElementById('modalPlanosContent').innerHTML = html;
-            
-            var modal = new bootstrap.Modal(document.getElementById('modalPlanosAcao'));
-            modal.show();
+            document.getElementById('modalPlanosContent').innerHTML = await res.text();
+            new bootstrap.Modal(document.getElementById('modalPlanosAcao')).show();
         }
 
         async function recarregarListaPlanos(avaliacaoId) {
             const res = await fetch(`/PlanoAcao/ListarPorAvaliacao?avaliacaoId=${avaliacaoId}`);
-            const html = await res.text();
-            document.getElementById('modalPlanosContent').innerHTML = html;
+            document.getElementById('modalPlanosContent').innerHTML = await res.text();
         }
 
         async function salvarNovoPlano(avaliacaoId) {
@@ -225,32 +229,24 @@
 
             if (!desc) { alert("A descrição é obrigatória."); return; }
 
-            const payload = { AvaliacaoId: avaliacaoId, Descricao: desc, Responsavel: resp, Prazo: prazo };
-            
             const res = await fetch('/PlanoAcao/Adicionar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ AvaliacaoId: avaliacaoId, Descricao: desc, Responsavel: resp, Prazo: prazo })
             });
 
-            if (res.ok) {
-                await recarregarListaPlanos(avaliacaoId);
-            } else {
-                alert(await res.text());
-            }
+            if (res.ok) await recarregarListaPlanos(avaliacaoId);
+            else alert(await res.text());
         }
 
         async function alterarStatusPlano(planoId, novoStatus) {
-            const res = await fetch(`/PlanoAcao/AtualizarStatus?planoId=${planoId}&novoStatus=${novoStatus}`, { method: 'POST' });
-            if (!res.ok) alert("Erro ao atualizar status.");
+            await fetch(`/PlanoAcao/AtualizarStatus?planoId=${planoId}&novoStatus=${novoStatus}`, { method: 'POST' });
         }
 
         async function excluirPlano(planoId, avaliacaoId) {
-            if(confirm("Excluir este plano de ação?")) {
+            if(confirm("Excluir este plano?")) {
                 const res = await fetch(`/PlanoAcao/Excluir?planoId=${planoId}`, { method: 'DELETE' });
-                if (res.ok) {
-                    await recarregarListaPlanos(avaliacaoId);
-                }
+                if (res.ok) await recarregarListaPlanos(avaliacaoId);
             }
         }
     </script>

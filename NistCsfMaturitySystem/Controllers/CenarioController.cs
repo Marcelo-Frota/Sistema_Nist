@@ -122,17 +122,15 @@ namespace NistCsfMaturitySystem.Controllers
         // Endpoint AJAX para Atualização de Subcategoria no Cenário Alvo
         [HttpPost]
         [Authorize(Roles = "Administrador,Editor")]
-        // [ValidateAntiForgeryToken] - Desabilitado temporariamente para facilitar o Ajax direto
-        public async Task<IActionResult> SalvarAvaliacao([FromBody] AvaliacaoDto dto)
+        public async Task<IActionResult> SalvarAlvo([FromBody] AvaliacaoDto dto)
         {
             var cenario = await _context.Cenarios.FirstOrDefaultAsync(c => c.Id == dto.CenarioId);
             
-            if (cenario == null || cenario.Tipo == "ATUAL" || cenario.Status != "EM_ELABORACAO")
+            if (cenario == null || cenario.Tipo != "ALVO" || cenario.Status != "EM_ELABORACAO")
             {
                 return BadRequest(new { success = false, message = "Cenário inválido ou não editável." });
             }
 
-            // Tenta encontrar avaliação existente
             var avaliacao = await _context.AvaliacoesSubcategoria
                 .FirstOrDefaultAsync(a => a.CenarioId == dto.CenarioId && a.SubcategoriaId == dto.SubcategoriaId);
 
@@ -142,23 +140,78 @@ namespace NistCsfMaturitySystem.Controllers
                 {
                     CenarioId = dto.CenarioId,
                     SubcategoriaId = dto.SubcategoriaId,
-                    StatusMaturidade = dto.StatusMaturidade,
-                    Prioridade = dto.Prioridade,
-                    Justificativa = dto.Justificativa
+                    PrioridadeAlvo = dto.PrioridadeAlvo,
+                    TierAlvo = dto.TierAlvo,
+                    PoliticasAlvo = dto.PoliticasAlvo,
+                    PraticasAlvo = dto.PraticasAlvo,
+                    ResponsabilidadesAlvo = dto.ResponsabilidadesAlvo,
+                    ReferenciasAlvo = dto.ReferenciasAlvo
                 };
                 _context.AvaliacoesSubcategoria.Add(avaliacao);
             }
             else
             {
-                avaliacao.StatusMaturidade = dto.StatusMaturidade;
-                avaliacao.Prioridade = dto.Prioridade;
-                avaliacao.Justificativa = dto.Justificativa;
+                avaliacao.PrioridadeAlvo = dto.PrioridadeAlvo;
+                avaliacao.TierAlvo = dto.TierAlvo;
+                avaliacao.PoliticasAlvo = dto.PoliticasAlvo;
+                avaliacao.PraticasAlvo = dto.PraticasAlvo;
+                avaliacao.ResponsabilidadesAlvo = dto.ResponsabilidadesAlvo;
+                avaliacao.ReferenciasAlvo = dto.ReferenciasAlvo;
                 _context.AvaliacoesSubcategoria.Update(avaliacao);
             }
 
-            await _context.SaveChangesAsync(); // AuditoriaLog captura automaticamente
+            await _context.SaveChangesAsync();
 
-            return Ok(new { success = true, message = "Salvo com sucesso!", avaliacaoId = avaliacao.Id });
+            return Ok(new { success = true, message = "Metas do Alvo salvas com sucesso!", avaliacaoId = avaliacao.Id });
+        }
+
+        // Endpoint AJAX para Atualização de Subcategoria no Cenário Atual
+        [HttpPost]
+        [Authorize(Roles = "Administrador,Editor,Auditor")]
+        public async Task<IActionResult> SalvarAtual([FromBody] AvaliacaoDto dto)
+        {
+            var cenario = await _context.Cenarios.FirstOrDefaultAsync(c => c.Id == dto.CenarioId);
+            
+            if (cenario == null || cenario.Tipo != "ATUAL")
+            {
+                return BadRequest(new { success = false, message = "Cenário inválido para edição atual." });
+            }
+
+            var avaliacao = await _context.AvaliacoesSubcategoria
+                .FirstOrDefaultAsync(a => a.CenarioId == dto.CenarioId && a.SubcategoriaId == dto.SubcategoriaId);
+
+            if (avaliacao == null)
+            {
+                // Se não existir avaliação (não deveria acontecer se o Alvo gerou tudo, mas por segurança)
+                avaliacao = new AvaliacaoSubcategoria
+                {
+                    CenarioId = dto.CenarioId,
+                    SubcategoriaId = dto.SubcategoriaId,
+                    PrioridadeAtual = dto.PrioridadeAtual,
+                    StatusAtual = dto.StatusAtual,
+                    PoliticasAtual = dto.PoliticasAtual,
+                    PraticasAtual = dto.PraticasAtual,
+                    ResponsabilidadesAtual = dto.ResponsabilidadesAtual,
+                    ReferenciasAtual = dto.ReferenciasAtual,
+                    EvidenciasAtual = dto.EvidenciasAtual
+                };
+                _context.AvaliacoesSubcategoria.Add(avaliacao);
+            }
+            else
+            {
+                avaliacao.PrioridadeAtual = dto.PrioridadeAtual;
+                avaliacao.StatusAtual = dto.StatusAtual;
+                avaliacao.PoliticasAtual = dto.PoliticasAtual;
+                avaliacao.PraticasAtual = dto.PraticasAtual;
+                avaliacao.ResponsabilidadesAtual = dto.ResponsabilidadesAtual;
+                avaliacao.ReferenciasAtual = dto.ReferenciasAtual;
+                avaliacao.EvidenciasAtual = dto.EvidenciasAtual;
+                _context.AvaliacoesSubcategoria.Update(avaliacao);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true, message = "Status Atual salvo com sucesso!", avaliacaoId = avaliacao.Id });
         }
 
         [HttpPost]
@@ -190,8 +243,22 @@ namespace NistCsfMaturitySystem.Controllers
     {
         public int CenarioId { get; set; }
         public int SubcategoriaId { get; set; }
-        public string StatusMaturidade { get; set; }
-        public string Prioridade { get; set; }
-        public string Justificativa { get; set; }
+
+        // Campos Alvo
+        public string? PrioridadeAlvo { get; set; }
+        public string? TierAlvo { get; set; }
+        public string? PoliticasAlvo { get; set; }
+        public string? PraticasAlvo { get; set; }
+        public string? ResponsabilidadesAlvo { get; set; }
+        public string? ReferenciasAlvo { get; set; }
+
+        // Campos Atuais
+        public string? PrioridadeAtual { get; set; }
+        public string? StatusAtual { get; set; }
+        public string? PoliticasAtual { get; set; }
+        public string? PraticasAtual { get; set; }
+        public string? ResponsabilidadesAtual { get; set; }
+        public string? ReferenciasAtual { get; set; }
+        public string? EvidenciasAtual { get; set; }
     }
 }

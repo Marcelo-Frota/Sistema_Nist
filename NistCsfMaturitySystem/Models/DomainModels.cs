@@ -199,19 +199,14 @@ namespace NistCsfMaturitySystem.Models
         [Column("ID_SUBCATEGORIA")]
         public int SubcategoriaId { get; set; }
 
-        [Column("TX_STATUS_MATURIDADE")]
+        // --- CAMPOS ALVO (TARGET) ---
+        [Column("TX_PRIORIDADE_ALVO")]
         [StringLength(50)]
-        public string? StatusMaturidade { get; set; }
+        public string? PrioridadeAlvo { get; set; }
 
-        [Column("TX_PRIORIDADE")]
-        [StringLength(10)]
-        public string? Prioridade { get; set; }
-
-        [Column("NR_NIVEL_IMPLEMENTACAO")]
-        public int? NivelImplementacao { get; set; }
-
-        [Column("TX_JUSTIFICATIVA")]
-        public string? Justificativa { get; set; }
+        [Column("TX_TIER_ALVO")]
+        [StringLength(50)]
+        public string? TierAlvo { get; set; }
 
         [Column("TX_POLITICAS_ALVO")]
         public string? PoliticasAlvo { get; set; }
@@ -219,8 +214,35 @@ namespace NistCsfMaturitySystem.Models
         [Column("TX_PRATICAS_ALVO")]
         public string? PraticasAlvo { get; set; }
 
-        [Column("TX_RESPONSABILIDADES")]
+        [Column("TX_RESPONSABILIDADES_ALVO")]
         public string? ResponsabilidadesAlvo { get; set; }
+
+        [Column("TX_REFERENCIAS_ALVO")]
+        public string? ReferenciasAlvo { get; set; }
+
+        // --- CAMPOS ATUAIS (CURRENT) ---
+        [Column("TX_PRIORIDADE_ATUAL")]
+        [StringLength(50)]
+        public string? PrioridadeAtual { get; set; }
+
+        [Column("TX_STATUS_ATUAL")]
+        [StringLength(50)]
+        public string? StatusAtual { get; set; } // Atendido, Parcialmente, etc.
+
+        [Column("TX_POLITICAS_ATUAL")]
+        public string? PoliticasAtual { get; set; }
+
+        [Column("TX_PRATICAS_ATUAL")]
+        public string? PraticasAtual { get; set; }
+
+        [Column("TX_RESPONSABILIDADES_ATUAL")]
+        public string? ResponsabilidadesAtual { get; set; }
+
+        [Column("TX_REFERENCIAS_ATUAL")]
+        public string? ReferenciasAtual { get; set; }
+
+        [Column("TX_EVIDENCIAS_ATUAL")]
+        public string? EvidenciasAtual { get; set; }
 
         [ForeignKey("CenarioId")]
         public Cenario Cenario { get; set; } = null!;

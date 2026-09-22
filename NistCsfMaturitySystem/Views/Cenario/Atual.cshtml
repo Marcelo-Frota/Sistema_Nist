@@ -21,7 +21,7 @@
 
 @if (Model.Funcoes != null && Model.Funcoes.Any())
 {
-    <p class="text-muted">Abaixo estão os níveis de maturidade e controles oficialmente implementados e auditados pela corporação. (Visão Somente Leitura).</p>
+    <p class="text-muted">Compare as Metas do Alvo com a realidade da sua empresa hoje. Registre o progresso e as evidências.</p>
 
     <div class="accordion" id="accordionNistAtual">
         @foreach (var funcao in Model.Funcoes)
@@ -44,52 +44,105 @@
                                 <div class="list-group">
                                     @foreach (var subcat in categoria.Subcategorias)
                                     {
-                                        var badgeColor = subcat.Avaliacao?.StatusMaturidade switch {
+                                        var badgeColor = subcat.Avaliacao?.StatusAtual switch {
                                             "ATENDIDO" => "bg-success",
                                             "RAZOAVELMENTE_ATENDIDO" => "bg-info text-dark",
                                             "PARCIALMENTE_ATENDIDO" => "bg-warning text-dark",
-                                            "DEFICITARIAMENTE_ATENDIDO" => "bg-orange",
-                                            "NAO_ATENDIDO" => "bg-danger",
+                                            "DEFICITARIAMENTE_ATENDIDO" => "bg-danger",
+                                            "NAO_ATENDIDO" => "bg-dark",
                                             _ => "bg-secondary"
                                         };
 
-                                        <div class="list-group-item list-group-item-action flex-column align-items-start bg-white mb-2 border rounded">
+                                        <div class="list-group-item list-group-item-action flex-column align-items-start">
                                             <div class="d-flex w-100 justify-content-between mb-2">
-                                                <h6 class="mb-1 fw-bold text-primary">@subcat.Codigo</h6>
-                                                <span class="badge @badgeColor fs-6 shadow-sm">
-                                                    @(string.IsNullOrEmpty(subcat.Avaliacao?.StatusMaturidade) ? "NÃO AVALIADO" : subcat.Avaliacao.StatusMaturidade.Replace("_", " "))
+                                                <h6 class="mb-1 fw-bold">@subcat.Codigo</h6>
+                                                <span class="badge @badgeColor" id="badge_status_@subcat.Id">
+                                                    @(string.IsNullOrEmpty(subcat.Avaliacao?.StatusAtual) ? "STATUS PENDENTE" : subcat.Avaliacao.StatusAtual.Replace("_", " "))
                                                 </span>
                                             </div>
                                             <p class="mb-3 small">@subcat.Descricao</p>
-                                            
-                                            @if (subcat.Avaliacao != null)
-                                            {
-                                                <div class="row g-2 mt-2 pt-2 border-top">
-                                                    <div class="col-md-4">
-                                                        <span class="small fw-bold text-muted">Prioridade: </span>
-                                                        <span class="small">@subcat.Avaliacao.Prioridade</span>
-                                                    </div>
-                                                    <div class="col-md-8">
-                                                        <span class="small fw-bold text-muted">Justificativa / GAP: </span>
-                                                        <span class="small fst-italic">@(string.IsNullOrEmpty(subcat.Avaliacao.Justificativa) ? "Sem justificativa." : subcat.Avaliacao.Justificativa)</span>
-                                                    </div>
-                                                </div>
+
+                                            <!-- Card Comparativo: Alvo (Bloqueado) vs Atual (Editável) -->
+                                            <div class="row g-3">
                                                 
-                                                <!-- Botões de Ação Somente Leitura (Evidências e Planos) -->
-                                                <div class="mt-3 text-end">
-                                                    <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalPlanos(@subcat.Avaliacao.Id, '@subcat.Codigo')">
-                                                        <i class="bi bi-list-task"></i> Ver Planos de Ação
-                                                    </button>
-                                                    <button class="btn btn-sm btn-outline-primary" onclick="alert('Funcionalidade de Download de Evidências Anexas')">
-                                                        <i class="bi bi-paperclip"></i> Evidências (3)
-                                                    </button>
+                                                <!-- BLOCO ESQUERDO: METAS (ALVO) - Somente Leitura -->
+                                                <div class="col-md-6 border-end">
+                                                    <h6 class="text-primary fw-bold mb-3"><i class="bi bi-bullseye"></i> Metas Definidas no Alvo</h6>
+                                                    <div class="row g-2 small">
+                                                        <div class="col-6"><strong>Prioridade:</strong> @subcat.Avaliacao?.PrioridadeAlvo</div>
+                                                        <div class="col-6"><strong>Tier CSF:</strong> @subcat.Avaliacao?.TierAlvo</div>
+                                                        <div class="col-12 mt-2"><strong>Políticas/Processos:</strong><br/> <span class="text-muted">@(string.IsNullOrEmpty(subcat.Avaliacao?.PoliticasAlvo) ? "-" : subcat.Avaliacao.PoliticasAlvo)</span></div>
+                                                        <div class="col-12 mt-2"><strong>Práticas Internas:</strong><br/> <span class="text-muted">@(string.IsNullOrEmpty(subcat.Avaliacao?.PraticasAlvo) ? "-" : subcat.Avaliacao.PraticasAlvo)</span></div>
+                                                        <div class="col-12 mt-2"><strong>Papéis e Resp.:</strong><br/> <span class="text-muted">@(string.IsNullOrEmpty(subcat.Avaliacao?.ResponsabilidadesAlvo) ? "-" : subcat.Avaliacao.ResponsabilidadesAlvo)</span></div>
+                                                        <div class="col-12 mt-2"><strong>Ref. Informativas:</strong><br/> <span class="text-muted">@(string.IsNullOrEmpty(subcat.Avaliacao?.ReferenciasAlvo) ? "-" : subcat.Avaliacao.ReferenciasAlvo)</span></div>
+                                                    </div>
                                                 </div>
-                                            }
+
+                                                <!-- BLOCO DIREITO: REALIDADE (ATUAL) - Editável -->
+                                                <div class="col-md-6">
+                                                    <h6 class="text-success fw-bold mb-3"><i class="bi bi-activity"></i> Realidade Atual (Preenchimento)</h6>
+                                                    
+                                                    <div class="row g-2 align-items-start">
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-bold">Status Atual</label>
+                                                            <select class="form-select form-select-sm mb-2" id="status_atual_@subcat.Id">
+                                                                <option value="">Selecione...</option>
+                                                                <option value="NAO_ATENDIDO" selected="@(subcat.Avaliacao?.StatusAtual == "NAO_ATENDIDO")">Não Atendido</option>
+                                                                <option value="DEFICITARIAMENTE_ATENDIDO" selected="@(subcat.Avaliacao?.StatusAtual == "DEFICITARIAMENTE_ATENDIDO")">Deficitariamente</option>
+                                                                <option value="PARCIALMENTE_ATENDIDO" selected="@(subcat.Avaliacao?.StatusAtual == "PARCIALMENTE_ATENDIDO")">Parcialmente</option>
+                                                                <option value="RAZOAVELMENTE_ATENDIDO" selected="@(subcat.Avaliacao?.StatusAtual == "RAZOAVELMENTE_ATENDIDO")">Razoavelmente</option>
+                                                                <option value="ATENDIDO" selected="@(subcat.Avaliacao?.StatusAtual == "ATENDIDO")">Atendido</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-bold">Prioridade Atual</label>
+                                                            <select class="form-select form-select-sm mb-2" id="prioridade_atual_@subcat.Id">
+                                                                <option value="">Selecione...</option>
+                                                                <option value="BAIXA" selected="@(subcat.Avaliacao?.PrioridadeAtual == "BAIXA")">Baixa</option>
+                                                                <option value="MEDIA" selected="@(subcat.Avaliacao?.PrioridadeAtual == "MEDIA")">Média</option>
+                                                                <option value="ALTA" selected="@(subcat.Avaliacao?.PrioridadeAtual == "ALTA")">Alta</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-bold">Políticas/Processos Atuais</label>
+                                                            <textarea class="form-control form-control-sm mb-2" id="politicas_atual_@subcat.Id" rows="2">@subcat.Avaliacao?.PoliticasAtual</textarea>
+
+                                                            <label class="form-label small fw-bold">Práticas Internas Atuais</label>
+                                                            <textarea class="form-control form-control-sm mb-2" id="praticas_atual_@subcat.Id" rows="2">@subcat.Avaliacao?.PraticasAtual</textarea>
+                                                        </div>
+
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-bold">Papéis e Resp. Atuais</label>
+                                                            <textarea class="form-control form-control-sm mb-2" id="responsabilidades_atual_@subcat.Id" rows="2">@subcat.Avaliacao?.ResponsabilidadesAtual</textarea>
+                                                            
+                                                            <label class="form-label small fw-bold">Ref. Informativas Atuais</label>
+                                                            <textarea class="form-control form-control-sm mb-2" id="referencias_atual_@subcat.Id" rows="2">@subcat.Avaliacao?.ReferenciasAtual</textarea>
+                                                        </div>
+
+                                                        <div class="col-md-12">
+                                                            <label class="form-label small fw-bold text-success">Artefatos e Evidências (Provas)</label>
+                                                            <textarea class="form-control form-control-sm mb-2 border-success" id="evidencias_atual_@subcat.Id" rows="2" placeholder="Descreva as evidências que provam que a meta foi atingida...">@subcat.Avaliacao?.EvidenciasAtual</textarea>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="text-end mt-2">
+                                                        <button class="btn btn-sm btn-success px-4" onclick="salvarAtual(@Model.Cenario.Id, @subcat.Id)">
+                                                            <span id="spinner_atual_@subcat.Id" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                                            Salvar Progresso Atual
+                                                        </button>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+
                                         </div>
                                     }
                                 </div>
+
                             </div>
                         }
+                        
                     </div>
                 </div>
             </div>
@@ -97,35 +150,69 @@
     </div>
 }
 
-<!-- Modal Planos de Ação (Reaproveitado, porém em modo leitura a depender da lógica) -->
-<div class="modal fade" id="modalPlanosAcao" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title" id="modalPlanosTitle">Planos de Ação Registrados</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="modalPlanosContent">
-                <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
-            </div>
-        </div>
-    </div>
-</div>
-
 @section Scripts {
     <script>
-        async function abrirModalPlanos(avaliacaoId, codigoSubcat) {
-            document.getElementById('modalPlanosTitle').innerText = 'Planos de Ação - ' + codigoSubcat;
-            const res = await fetch(`/PlanoAcao/ListarPorAvaliacao?avaliacaoId=${avaliacaoId}`);
-            let html = await res.text();
+        async function salvarAtual(cenarioId, subcategoriaId) {
+            const status = document.getElementById(`status_atual_${subcategoriaId}`).value;
+            const prioridade = document.getElementById(`prioridade_atual_${subcategoriaId}`).value;
+            const politicas = document.getElementById(`politicas_atual_${subcategoriaId}`).value;
+            const praticas = document.getElementById(`praticas_atual_${subcategoriaId}`).value;
+            const responsabilidades = document.getElementById(`responsabilidades_atual_${subcategoriaId}`).value;
+            const referencias = document.getElementById(`referencias_atual_${subcategoriaId}`).value;
+            const evidencias = document.getElementById(`evidencias_atual_${subcategoriaId}`).value;
             
-            // Hack simples para remover os controles de formulário e deixar apenas a lista em modo leitura
-            html = html.replace(/<div class="mb-3">[\s\S]*?<\/div>/, ''); // Remove input group de adicionar
-            html = html.replace(/<select[\s\S]*?<\/select>/g, '<span class="badge bg-secondary">Visualizando</span>'); // Substitui selects
-            html = html.replace(/<button class="btn btn-sm btn-link text-danger[\s\S]*?<\/button>/g, ''); // Remove botão excluir
+            const spinner = document.getElementById(`spinner_atual_${subcategoriaId}`);
+            const badge = document.getElementById(`badge_status_${subcategoriaId}`);
             
-            document.getElementById('modalPlanosContent').innerHTML = html;
-            new bootstrap.Modal(document.getElementById('modalPlanosAcao')).show();
+            spinner.classList.remove('d-none');
+
+            const payload = {
+                CenarioId: cenarioId,
+                SubcategoriaId: subcategoriaId,
+                StatusAtual: status,
+                PrioridadeAtual: prioridade,
+                PoliticasAtual: politicas,
+                PraticasAtual: praticas,
+                ResponsabilidadesAtual: responsabilidades,
+                ReferenciasAtual: referencias,
+                EvidenciasAtual: evidencias
+            };
+
+            try {
+                const response = await fetch('/Cenario/SalvarAtual', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    badge.innerText = status ? status.replace('_', ' ') : "SALVO";
+                    
+                    // Ajusta a cor do badge baseado no status salvo
+                    badge.className = 'badge';
+                    if(status === 'ATENDIDO') badge.classList.add('bg-success');
+                    else if(status === 'PARCIALMENTE_ATENDIDO') badge.classList.add('bg-warning', 'text-dark');
+                    else if(status === 'DEFICITARIAMENTE_ATENDIDO') badge.classList.add('bg-danger');
+                    else if(status === 'NAO_ATENDIDO') badge.classList.add('bg-dark');
+                    else badge.classList.add('bg-secondary');
+
+                    const btn = spinner.parentElement;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = `<i class="bi bi-check2"></i> Salvo com Sucesso!`;
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        document.getElementById(`spinner_atual_${subcategoriaId}`).classList.add('d-none');
+                    }, 2000);
+                } else {
+                    alert("Erro: " + result.message);
+                    spinner.classList.add('d-none');
+                }
+            } catch (error) {
+                alert("Falha na comunicação.");
+                spinner.classList.add('d-none');
+            }
         }
     </script>
 }
