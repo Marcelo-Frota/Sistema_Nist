@@ -78,9 +78,10 @@ namespace NistCsfMaturitySystem.Controllers
 
             if (cenarioAlvo == null)
             {
-                // Em um sistema real, o Admin criaria um novo. Para teste, criamos um em memória se não existir
-                cenarioAlvo = new Cenario { Nome = "Cenário Alvo Padrão", Tipo = "ALVO", Status = "EM_ELABORACAO" };
-                // return View("NaoEncontrado"); 
+                // Como não existe cenário alvo em elaboração, cria e salva no banco de dados
+                cenarioAlvo = new Cenario { Nome = "CENÁRIO ALVO PADRÃO", Tipo = "ALVO", Status = "EM_ELABORACAO", DataCriacao = DateTime.Now };
+                _context.Cenarios.Add(cenarioAlvo);
+                await _context.SaveChangesAsync();
             }
 
             // Montar a Árvore do NIST CSF com as avaliações
