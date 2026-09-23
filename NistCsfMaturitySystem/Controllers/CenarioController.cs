@@ -78,8 +78,19 @@ namespace NistCsfMaturitySystem.Controllers
 
             if (cenarioAlvo == null)
             {
+                int usuarioId = 1;
+                var claimId = User.Claims.FirstOrDefault(c => c.Type == "UsuarioId")?.Value;
+                if (!string.IsNullOrEmpty(claimId)) usuarioId = int.Parse(claimId);
+
                 // Como não existe cenário alvo em elaboração, cria e salva no banco de dados
-                cenarioAlvo = new Cenario { Nome = "CENÁRIO ALVO PADRÃO", Tipo = "ALVO", Status = "EM_ELABORACAO", DataCriacao = DateTime.Now };
+                cenarioAlvo = new Cenario 
+                { 
+                    Nome = "CENÁRIO ALVO PADRÃO", 
+                    Tipo = "ALVO", 
+                    Status = "EM_ELABORACAO", 
+                    DataCriacao = DateTime.Now,
+                    CriadoPorId = usuarioId
+                };
                 _context.Cenarios.Add(cenarioAlvo);
                 await _context.SaveChangesAsync();
             }

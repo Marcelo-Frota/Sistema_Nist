@@ -1,3 +1,15 @@
+@inject NistCsfMaturitySystem.Data.ApplicationDbContext DbContext
+@{
+    bool isDbConnected = false;
+    try
+    {
+        isDbConnected = DbContext.Database.CanConnect();
+    }
+    catch
+    {
+        isDbConnected = false;
+    }
+}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -146,6 +158,11 @@
     <footer>
         <div class="container text-center text-muted">
             &copy; 2026 - Maturidade Organizacional NIST CSF - CPTM
+            <div class="mt-2">
+                <span class="badge @(isDbConnected ? "bg-success" : "bg-danger")">
+                    Status do Banco (Oracle): @(isDbConnected ? "CONECTADO" : "DESCONECTADO / ERRO")
+                </span>
+            </div>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
