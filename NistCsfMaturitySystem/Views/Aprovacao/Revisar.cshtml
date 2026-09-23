@@ -33,8 +33,8 @@
                 <span class="badge bg-primary rounded-pill">@Model.Avaliacoes.Count</span>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                Gaps "Não Atendidos":
-                <span class="badge bg-danger rounded-pill">@Model.Avaliacoes.Count(a => a.StatusMaturidade == "NAO_ATENDIDO")</span>
+                Metas Definidas como Tier 4 (Adaptável):
+                <span class="badge bg-success rounded-pill">@Model.Avaliacoes.Count(a => a.TierAlvo == "TIER_4")</span>
             </li>
         </ul>
 

@@ -55,11 +55,11 @@ namespace NistCsfMaturitySystem.Controllers
                 viewModel.SubcategoriasAvaliadas = cenario.Avaliacoes.Count;
 
                 // Status Counts
-                viewModel.QtdAtendido = cenario.Avaliacoes.Count(a => a.StatusMaturidade == "ATENDIDO");
-                viewModel.QtdRazoavel = cenario.Avaliacoes.Count(a => a.StatusMaturidade == "RAZOAVELMENTE_ATENDIDO");
-                viewModel.QtdParcial = cenario.Avaliacoes.Count(a => a.StatusMaturidade == "PARCIALMENTE_ATENDIDO");
-                viewModel.QtdDeficitario = cenario.Avaliacoes.Count(a => a.StatusMaturidade == "DEFICITARIAMENTE_ATENDIDO");
-                viewModel.QtdNaoAtendido = cenario.Avaliacoes.Count(a => a.StatusMaturidade == "NAO_ATENDIDO");
+                viewModel.QtdAtendido = cenario.Avaliacoes.Count(a => a.StatusAtual == "ATENDIDO");
+                viewModel.QtdRazoavel = cenario.Avaliacoes.Count(a => a.StatusAtual == "RAZOAVELMENTE_ATENDIDO");
+                viewModel.QtdParcial = cenario.Avaliacoes.Count(a => a.StatusAtual == "PARCIALMENTE_ATENDIDO");
+                viewModel.QtdDeficitario = cenario.Avaliacoes.Count(a => a.StatusAtual == "DEFICITARIAMENTE_ATENDIDO");
+                viewModel.QtdNaoAtendido = cenario.Avaliacoes.Count(a => a.StatusAtual == "NAO_ATENDIDO");
 
                 // Planos de Ação Pendentes (Vinculados a este cenário)
                 var avaliacoesIds = cenario.Avaliacoes.Select(a => a.Id).ToList();
@@ -80,7 +80,7 @@ namespace NistCsfMaturitySystem.Controllers
 
                     if (avaliacoesDaFuncao.Any())
                     {
-                        double scoreTotal = avaliacoesDaFuncao.Sum(a => a.StatusMaturidade switch
+                        double scoreTotal = avaliacoesDaFuncao.Sum(a => a.StatusAtual switch
                         {
                             "ATENDIDO" => 4.0,
                             "RAZOAVELMENTE_ATENDIDO" => 3.0,
