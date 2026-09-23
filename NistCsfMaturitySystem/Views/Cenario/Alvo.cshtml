@@ -157,7 +157,7 @@
             };
 
             try {
-                const response = await fetch('/Cenario/SalvarAlvo', {
+                const response = await fetch('@Url.Action("SalvarAlvo", "Cenario")', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -180,7 +180,7 @@
                     alert("Erro: " + result.message);
                 }
             } catch (error) {
-                alert("Falha na comunicação.");
+                alert("Falha na comunicação. Verifique a conexão com o servidor.");
             } finally {
                 spinner.classList.add('d-none');
             }
@@ -191,7 +191,7 @@
                 const spinner = document.getElementById('btnSubmitSpinner');
                 if (spinner) spinner.classList.remove('d-none');
                 
-                const res = await fetch(`/Cenario/SubmeterAprovacao?id=${cenarioId}`, { method: 'POST' });
+                const res = await fetch(`@Url.Action("SubmeterAprovacao", "Cenario")?id=${cenarioId}`, { method: 'POST' });
                 const result = await res.json();
                 
                 if (spinner) spinner.classList.add('d-none');
@@ -212,13 +212,13 @@
             }
 
             document.getElementById('modalPlanosTitle').innerText = 'Planos de Ação - ' + codigoSubcat;
-            const res = await fetch(`/PlanoAcao/ListarPorAvaliacao?avaliacaoId=${avaliacaoId}`);
+            const res = await fetch(`@Url.Action("ListarPorAvaliacao", "PlanoAcao")?avaliacaoId=${avaliacaoId}`);
             document.getElementById('modalPlanosContent').innerHTML = await res.text();
             new bootstrap.Modal(document.getElementById('modalPlanosAcao')).show();
         }
 
         async function recarregarListaPlanos(avaliacaoId) {
-            const res = await fetch(`/PlanoAcao/ListarPorAvaliacao?avaliacaoId=${avaliacaoId}`);
+            const res = await fetch(`@Url.Action("ListarPorAvaliacao", "PlanoAcao")?avaliacaoId=${avaliacaoId}`);
             document.getElementById('modalPlanosContent').innerHTML = await res.text();
         }
 
@@ -229,7 +229,7 @@
 
             if (!desc) { alert("A descrição é obrigatória."); return; }
 
-            const res = await fetch('/PlanoAcao/Adicionar', {
+            const res = await fetch('@Url.Action("Adicionar", "PlanoAcao")', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ AvaliacaoId: avaliacaoId, Descricao: desc, Responsavel: resp, Prazo: prazo })
@@ -240,12 +240,12 @@
         }
 
         async function alterarStatusPlano(planoId, novoStatus) {
-            await fetch(`/PlanoAcao/AtualizarStatus?planoId=${planoId}&novoStatus=${novoStatus}`, { method: 'POST' });
+            await fetch(`@Url.Action("AtualizarStatus", "PlanoAcao")?planoId=${planoId}&novoStatus=${novoStatus}`, { method: 'POST' });
         }
 
         async function excluirPlano(planoId, avaliacaoId) {
             if(confirm("Excluir este plano?")) {
-                const res = await fetch(`/PlanoAcao/Excluir?planoId=${planoId}`, { method: 'DELETE' });
+                const res = await fetch(`@Url.Action("Excluir", "PlanoAcao")?planoId=${planoId}`, { method: 'DELETE' });
                 if (res.ok) await recarregarListaPlanos(avaliacaoId);
             }
         }

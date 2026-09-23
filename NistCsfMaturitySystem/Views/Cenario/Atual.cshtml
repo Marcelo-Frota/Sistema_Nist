@@ -179,7 +179,7 @@
             };
 
             try {
-                const response = await fetch('/Cenario/SalvarAtual', {
+                const response = await fetch('@Url.Action("SalvarAtual", "Cenario")', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
