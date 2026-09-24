@@ -237,10 +237,9 @@ namespace NistCsfMaturitySystem.Controllers
             if (cenario == null || cenario.Tipo != "ALVO" || cenario.Status != "EM_ELABORACAO")
                 return BadRequest(new { success = false, message = "Cenário inválido para submissão." });
 
-            var totalSubcategorias = await _context.NistSubcategorias.CountAsync(s => s.Status == "ATIVO");
-            if (cenario.Avaliacoes.Count < totalSubcategorias)
+            if (cenario.Avaliacoes.Count == 0)
             {
-                return BadRequest(new { success = false, message = $"Ainda faltam itens a serem avaliados. Progresso: {cenario.Avaliacoes.Count}/{totalSubcategorias}" });
+                return BadRequest(new { success = false, message = "Você precisa avaliar pelo menos uma subcategoria antes de solicitar a aprovação." });
             }
 
             cenario.Status = "PENDENTE_APROVACAO";

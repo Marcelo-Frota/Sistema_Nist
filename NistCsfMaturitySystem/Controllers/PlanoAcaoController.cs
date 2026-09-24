@@ -35,6 +35,7 @@ namespace NistCsfMaturitySystem.Controllers
         [HttpPost]
         public async Task<IActionResult> Adicionar([FromBody] PlanoAcao dto)
         {
+            if (dto == null) return BadRequest("Dados inválidos. Verifique os formatos enviados (ex: preencha a data ou deixe-a vazia adequadamente).");
             if (string.IsNullOrWhiteSpace(dto.Descricao))
                 return BadRequest("A descrição do plano de ação é obrigatória.");
 

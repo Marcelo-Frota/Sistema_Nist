@@ -232,7 +232,7 @@
             const res = await fetch('@Url.Action("Adicionar", "PlanoAcao")', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ AvaliacaoId: avaliacaoId, Descricao: desc, Responsavel: resp, Prazo: prazo })
+                body: JSON.stringify({ AvaliacaoId: avaliacaoId, Descricao: desc, Responsavel: resp, Prazo: prazo ? prazo : null })
             });
 
             if (res.ok) await recarregarListaPlanos(avaliacaoId);
