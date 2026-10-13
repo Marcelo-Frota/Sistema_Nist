@@ -36,11 +36,10 @@ namespace NistCsfMaturitySystem.Services
                 return (false, "O cenário deve estar com status PENDENTE_APROVACAO para ser efetivado.");
             }
 
-            // Validação de negócio: Todas as subcategorias ativas devem ter avaliação preenchida
-            var totalSubcategoriasAtivas = await _context.NistSubcategorias.CountAsync(s => s.Status == "ATIVO");
-            if (cenarioAlvo.Avaliacoes.Count < totalSubcategoriasAtivas)
+            // Validação modular de negócio: Pelo menos uma subcategoria deve estar avaliada
+            if (cenarioAlvo.Avaliacoes.Count == 0)
             {
-                return (false, "Nem todas as subcategorias foram avaliadas no Cenário Alvo. A efetivação foi bloqueada.");
+                return (false, "Nenhuma subcategoria foi avaliada no Cenário Alvo. A efetivação foi bloqueada.");
             }
             
             // Validar se há planos de ação pendentes (que travariam a efetivação, dependendo da regra exata)

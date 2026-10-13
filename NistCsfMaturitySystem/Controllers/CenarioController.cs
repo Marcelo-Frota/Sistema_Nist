@@ -29,8 +29,21 @@ namespace NistCsfMaturitySystem.Controllers
 
             if (cenarioAtual == null)
             {
-                ViewBag.Message = "Nenhum Cenário Atual vigente encontrado.";
-                return View(new CenarioAlvoViewModel { Cenario = new Cenario { Nome = "Não há baseline vigente" } });
+                int usuarioId = 1;
+                var claimId = User.Claims.FirstOrDefault(c => c.Type == "UsuarioId")?.Value;
+                if (!string.IsNullOrEmpty(claimId)) usuarioId = int.Parse(claimId);
+
+                cenarioAtual = new Cenario 
+                { 
+                    Nome = "CENÁRIO ATUAL (BASELINE VIGENTE)", 
+                    Tipo = "ATUAL", 
+                    Status = "VIGENTE", 
+                    DataCriacao = DateTime.Now,
+                    DataEfetivacao = DateTime.Now,
+                    CriadoPorId = usuarioId
+                };
+                _context.Cenarios.Add(cenarioAtual);
+                await _context.SaveChangesAsync();
             }
 
             var funcoesDb = await _context.NistFuncoes
@@ -58,7 +71,8 @@ namespace NistCsfMaturitySystem.Controllers
                             Id = s.Id,
                             Codigo = s.Codigo,
                             Descricao = s.Descricao,
-                            Avaliacao = cenarioAtual.Avaliacoes?.FirstOrDefault(a => a.SubcategoriaId == s.Id)
+                            Avaliacao = cenarioAtual.Avaliacoes?.FirstOrDefault(a => a.SubcategoriaId == s.Id),
+                            EfetivadaNoAtual = true
                         }).ToList()
                     }).ToList()
                 }).ToList()
@@ -95,6 +109,15 @@ namespace NistCsfMaturitySystem.Controllers
                 await _context.SaveChangesAsync();
             }
 
+            // Busca o cenário atual vigente para identificar quais subcategorias já foram efetivadas
+            var cenarioAtual = await _context.Cenarios
+                .Include(c => c.Avaliacoes)
+                .FirstOrDefaultAsync(c => c.Tipo == "ATUAL" && c.Status == "VIGENTE");
+
+            var subcategoriasEfetivadasIds = cenarioAtual?.Avaliacoes
+                .Where(a => !string.IsNullOrEmpty(a.TierAlvo))
+                .Select(a => a.SubcategoriaId).ToHashSet() ?? new HashSet<int>();
+
             // Montar a Árvore do NIST CSF com as avaliações
             var funcoesDb = await _context.NistFuncoes
                 .Include(f => f.Categorias)
@@ -122,7 +145,8 @@ namespace NistCsfMaturitySystem.Controllers
                             Codigo = s.Codigo,
                             Descricao = s.Descricao,
                             // Mapeia a avaliação existente, se houver
-                            Avaliacao = cenarioAlvo.Avaliacoes?.FirstOrDefault(a => a.SubcategoriaId == s.Id)
+                            Avaliacao = cenarioAlvo.Avaliacoes?.FirstOrDefault(a => a.SubcategoriaId == s.Id),
+                            EfetivadaNoAtual = subcategoriasEfetivadasIds.Contains(s.Id)
                         }).ToList()
                     }).ToList()
                 }).ToList()
@@ -138,9 +162,9 @@ namespace NistCsfMaturitySystem.Controllers
         {
             var cenario = await _context.Cenarios.FirstOrDefaultAsync(c => c.Id == dto.CenarioId);
             
-            if (cenario == null || cenario.Tipo != "ALVO" || cenario.Status != "EM_ELABORACAO")
+            if (cenario == null || cenario.Tipo != "ALVO" || (cenario.Status != "EM_ELABORACAO" && cenario.Status != "PENDENTE_APROVACAO"))
             {
-                return BadRequest(new { success = false, message = "Cenário inválido ou não editável." });
+                return BadRequest(new { success = false, message = "Cenário inválido ou já arquivado." });
             }
 
             var avaliacao = await _context.AvaliacoesSubcategoria
@@ -224,6 +248,72 @@ namespace NistCsfMaturitySystem.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { success = true, message = "Status Atual salvo com sucesso!", avaliacaoId = avaliacao.Id });
+        }
+
+        // Endpoint AJAX para Solicitar Efetivação por Subcategoria (Submete para Revisão do Administrador)
+        [HttpPost]
+        [Authorize(Roles = "Administrador,Editor")]
+        public async Task<IActionResult> SolicitarEfetivacaoSubcategoria([FromBody] AvaliacaoDto dto)
+        {
+            if (dto == null)
+                return BadRequest(new { success = false, message = "Dados inválidos." });
+
+            if (string.IsNullOrWhiteSpace(dto.TierAlvo))
+                return BadRequest(new { success = false, message = "Por favor, selecione pelo menos o 'Tier CSF Alvo' antes de submeter esta subcategoria para aprovação." });
+
+            // 1. Salvar ou atualizar no Cenário Alvo
+            var cenarioAlvo = await _context.Cenarios.FirstOrDefaultAsync(c => c.Id == dto.CenarioId);
+            if (cenarioAlvo == null || cenarioAlvo.Tipo != "ALVO")
+                return BadRequest(new { success = false, message = "Cenário Alvo inválido." });
+
+            var avaliacaoAlvo = await _context.AvaliacoesSubcategoria
+                .FirstOrDefaultAsync(a => a.CenarioId == dto.CenarioId && a.SubcategoriaId == dto.SubcategoriaId);
+
+            if (avaliacaoAlvo == null)
+            {
+                avaliacaoAlvo = new AvaliacaoSubcategoria
+                {
+                    CenarioId = dto.CenarioId,
+                    SubcategoriaId = dto.SubcategoriaId,
+                    PrioridadeAlvo = dto.PrioridadeAlvo,
+                    TierAlvo = dto.TierAlvo,
+                    PoliticasAlvo = dto.PoliticasAlvo,
+                    PraticasAlvo = dto.PraticasAlvo,
+                    ResponsabilidadesAlvo = dto.ResponsabilidadesAlvo,
+                    ReferenciasAlvo = dto.ReferenciasAlvo
+                };
+                _context.AvaliacoesSubcategoria.Add(avaliacaoAlvo);
+            }
+            else
+            {
+                avaliacaoAlvo.PrioridadeAlvo = dto.PrioridadeAlvo;
+                avaliacaoAlvo.TierAlvo = dto.TierAlvo;
+                avaliacaoAlvo.PoliticasAlvo = dto.PoliticasAlvo;
+                avaliacaoAlvo.PraticasAlvo = dto.PraticasAlvo;
+                avaliacaoAlvo.ResponsabilidadesAlvo = dto.ResponsabilidadesAlvo;
+                avaliacaoAlvo.ReferenciasAlvo = dto.ReferenciasAlvo;
+                _context.AvaliacoesSubcategoria.Update(avaliacaoAlvo);
+            }
+
+            // 2. Colocar o Cenário Alvo como PENDENTE_APROVACAO (NÃO promove direto! O Administrador deve aprovar em Revisar Baseline)
+            cenarioAlvo.Status = "PENDENTE_APROVACAO";
+            _context.Cenarios.Update(cenarioAlvo);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { 
+                success = true, 
+                message = "Metas salvas e solicitação enviada! O Administrador agora deve aprovar na aba 'Revisar Baseline' para que as metas entrem em vigor no Cenário Atual.", 
+                avaliacaoId = avaliacaoAlvo.Id 
+            });
+        }
+
+        // Mantém compatibilidade com chamadas de EfetivarSubcategoria
+        [HttpPost]
+        [Authorize(Roles = "Administrador,Editor")]
+        public async Task<IActionResult> EfetivarSubcategoria([FromBody] AvaliacaoDto dto)
+        {
+            return await SolicitarEfetivacaoSubcategoria(dto);
         }
 
         [HttpPost]

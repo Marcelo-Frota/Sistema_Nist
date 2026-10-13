@@ -5,15 +5,36 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="page-title">@Model.Cenario.Nome <span class="badge bg-warning text-dark fs-6 ms-2">@Model.Cenario.Status</span></h2>
+    <h2 class="page-title">
+        @Model.Cenario.Nome 
+        <span class="badge @(Model.Cenario.Status == "PENDENTE_APROVACAO" ? "bg-warning text-dark" : "bg-secondary") fs-6 ms-2">
+            @(Model.Cenario.Status == "PENDENTE_APROVACAO" ? "PENDENTE DE APROVAÇÃO" : Model.Cenario.Status)
+        </span>
+    </h2>
     @if (Model.Cenario.Status == "EM_ELABORACAO")
     {
         <button class="btn btn-success" onclick="solicitarAprovacao(@Model.Cenario.Id)">
             <span id="btnSubmitSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-            Solicitar Efetivação
+            Solicitar Efetivação Geral
         </button>
     }
+    else if (Model.Cenario.Status == "PENDENTE_APROVACAO")
+    {
+        <a href="@Url.Action("Revisar", "Aprovacao")" class="btn btn-warning fw-bold">
+            <i class="bi bi-shield-check"></i> Ir para Revisar Baseline
+        </a>
+    }
 </div>
+
+@if (Model.Cenario.Status == "PENDENTE_APROVACAO")
+{
+    <div class="alert alert-warning d-flex justify-content-between align-items-center mb-4 border-warning shadow-sm">
+        <div>
+            <strong>Aguardando Revisão da Baseline:</strong> Este Cenário Alvo possui metas submetidas para aprovação. O Administrador deve acessar a aba <strong>Revisar Baseline</strong> para aprovar formalmente antes que entrem em vigor no Cenário Atual.
+        </div>
+        <a href="@Url.Action("Revisar", "Aprovacao")" class="btn btn-sm btn-dark">Revisar Baseline</a>
+    </div>
+}
 
 <p class="text-muted">Preencha as metas (Alvo/Target) para cada subcategoria. Esta tela define ONDE A EMPRESA QUER CHEGAR.</p>
 
@@ -41,9 +62,18 @@
                                     <div class="list-group-item list-group-item-action flex-column align-items-start">
                                         <div class="d-flex w-100 justify-content-between mb-2">
                                             <h6 class="mb-1 fw-bold">@subcat.Codigo</h6>
-                                            <span class="badge" id="badge_status_@subcat.Id">
-                                                @(string.IsNullOrEmpty(subcat.Avaliacao?.TierAlvo) ? "METAS PENDENTES" : "ALVO DEFINIDO")
-                                            </span>
+                                            @if (Model.Cenario.Status == "PENDENTE_APROVACAO" && !string.IsNullOrEmpty(subcat.Avaliacao?.TierAlvo))
+                                            {
+                                                <span class="badge bg-warning text-dark" id="badge_status_@subcat.Id">PENDENTE DE APROVAÇÃO</span>
+                                            }
+                                            else if (!string.IsNullOrEmpty(subcat.Avaliacao?.TierAlvo))
+                                            {
+                                                <span class="badge bg-success" id="badge_status_@subcat.Id">ALVO DEFINIDO</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary" id="badge_status_@subcat.Id">METAS PENDENTES</span>
+                                            }
                                         </div>
                                         <p class="mb-3 small">@subcat.Descricao</p>
                                         
@@ -90,11 +120,15 @@
 
                                             <!-- Coluna 4: Botões -->
                                             <div class="col-md-4 text-end d-flex flex-column justify-content-end align-items-end">
-                                                <button class="btn btn-sm btn-cptm w-100 mb-2" style="height: 40px;" onclick="salvarAlvo(@Model.Cenario.Id, @subcat.Id)">
+                                                <button class="btn btn-sm btn-cptm w-100 mb-2" style="height: 38px;" onclick="salvarAlvo(@Model.Cenario.Id, @subcat.Id)" title="Salva as metas no Cenário Alvo">
                                                     <span id="spinner_@subcat.Id" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                                                     Salvar Metas Alvo
                                                 </button>
-                                                <button class="btn btn-sm btn-outline-secondary w-100" style="height: 40px;" onclick="abrirModalPlanos(@(subcat.Avaliacao?.Id ?? 0), '@subcat.Codigo')">
+                                                <button class="btn btn-sm btn-warning text-dark w-100 mb-2 fw-bold" style="height: 38px;" id="btn_efetivar_@subcat.Id" onclick="solicitarEfetivacaoSubcategoria(@Model.Cenario.Id, @subcat.Id)" title="Submete as metas desta subcategoria para revisão do Administrador">
+                                                    <span id="spinner_efetivar_@subcat.Id" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                                    @(Model.Cenario.Status == "PENDENTE_APROVACAO" && !string.IsNullOrEmpty(subcat.Avaliacao?.TierAlvo) ? "Aguardando Aprovação" : "Solicitar Efetivação")
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary w-100" style="height: 38px;" onclick="abrirModalPlanos(@(subcat.Avaliacao?.Id ?? 0), '@subcat.Codigo')">
                                                     Ver Planos de Ação
                                                 </button>
                                             </div>
@@ -184,6 +218,69 @@
             } finally {
                 spinner.classList.add('d-none');
             }
+        }
+
+        async function solicitarEfetivacaoSubcategoria(cenarioId, subcategoriaId) {
+            const prioridade = document.getElementById(`prioridade_alvo_${subcategoriaId}`).value;
+            const tier = document.getElementById(`tier_alvo_${subcategoriaId}`).value;
+            const politicas = document.getElementById(`politicas_alvo_${subcategoriaId}`).value;
+            const praticas = document.getElementById(`praticas_alvo_${subcategoriaId}`).value;
+            const responsabilidades = document.getElementById(`responsabilidades_alvo_${subcategoriaId}`).value;
+            const referencias = document.getElementById(`referencias_alvo_${subcategoriaId}`).value;
+
+            if (!tier) {
+                alert("Por favor, selecione pelo menos o 'Tier CSF Alvo' antes de solicitar a efetivação.");
+                return;
+            }
+
+            if (!confirm("Deseja submeter as metas desta subcategoria para aprovação da baseline pelo Administrador?")) {
+                return;
+            }
+
+            const spinner = document.getElementById(`spinner_efetivar_${subcategoriaId}`);
+            const badge = document.getElementById(`badge_status_${subcategoriaId}`);
+            const btn = document.getElementById(`btn_efetivar_${subcategoriaId}`);
+            
+            spinner.classList.remove('d-none');
+
+            const payload = {
+                CenarioId: cenarioId,
+                SubcategoriaId: subcategoriaId,
+                PrioridadeAlvo: prioridade,
+                TierAlvo: tier,
+                PoliticasAlvo: politicas,
+                PraticasAlvo: praticas,
+                ResponsabilidadesAlvo: responsabilidades,
+                ReferenciasAlvo: referencias
+            };
+
+            try {
+                const response = await fetch('@Url.Action("SolicitarEfetivacaoSubcategoria", "Cenario")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    badge.innerText = "PENDENTE DE APROVAÇÃO";
+                    badge.className = 'badge bg-warning text-dark';
+                    btn.innerHTML = `<span id="spinner_efetivar_${subcategoriaId}" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>Aguardando Aprovação`;
+                    btn.className = 'btn btn-sm btn-outline-warning w-100 mb-2 fw-bold';
+                    alert(result.message);
+                } else {
+                    alert("Atenção: " + result.message);
+                }
+            } catch (error) {
+                alert("Falha na comunicação ao submeter a subcategoria para aprovação.");
+            } finally {
+                spinner.classList.add('d-none');
+            }
+        }
+
+        async function efetivarSubcategoria(cenarioId, subcategoriaId) {
+            await solicitarEfetivacaoSubcategoria(cenarioId, subcategoriaId);
         }
 
         async function solicitarAprovacao(cenarioId) {

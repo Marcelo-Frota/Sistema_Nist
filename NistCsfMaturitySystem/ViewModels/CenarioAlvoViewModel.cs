@@ -33,5 +33,6 @@ namespace NistCsfMaturitySystem.ViewModels
         public string Codigo { get; set; }
         public string Descricao { get; set; }
         public AvaliacaoSubcategoria Avaliacao { get; set; } // Pode ser nulo se ainda não foi avaliado
+        public bool EfetivadaNoAtual { get; set; }
     }
 }

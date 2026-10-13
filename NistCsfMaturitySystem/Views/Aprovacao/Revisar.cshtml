@@ -38,6 +38,36 @@
             </li>
         </ul>
 
+        @if (Model.Avaliacoes.Any())
+        {
+            <h6 class="fw-bold mt-4 mb-2 text-dark">Subcategorias com Metas Definidas para Efetivação:</h6>
+            <div class="table-responsive mb-4">
+                <table class="table table-sm table-bordered table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 120px;">Subcategoria</th>
+                            <th style="width: 120px;">Prioridade</th>
+                            <th style="width: 140px;">Tier Alvo</th>
+                            <th>Políticas e Processos Alvo</th>
+                            <th>Práticas Internas Alvo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var av in Model.Avaliacoes.OrderBy(a => a.Subcategoria?.Codigo))
+                        {
+                            <tr>
+                                <td class="fw-bold text-primary">@(av.Subcategoria?.Codigo ?? $"ID {av.SubcategoriaId}")</td>
+                                <td><span class="badge bg-secondary">@av.PrioridadeAlvo</span></td>
+                                <td><span class="badge bg-info text-dark">@av.TierAlvo</span></td>
+                                <td class="small text-muted">@(string.IsNullOrEmpty(av.PoliticasAlvo) ? "-" : av.PoliticasAlvo)</td>
+                                <td class="small text-muted">@(string.IsNullOrEmpty(av.PraticasAlvo) ? "-" : av.PraticasAlvo)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
         <div class="d-flex gap-3 justify-content-end">
             <!-- Botão Rejeitar -->
             <form asp-action="Rejeitar" asp-controller="Aprovacao" method="post" onsubmit="return confirm('Tem certeza que deseja DEVOLVER este cenário para os Editores?');">
