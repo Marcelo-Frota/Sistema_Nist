@@ -1,89 +1,306 @@
 @model NistCsfMaturitySystem.Models.Cenario
 
 @{
-    ViewData["Title"] = "Revisar e Aprovar Cenário Alvo";
+    ViewData["Title"] = "Revisar e Aprovar Baseline";
+    var subcategoriasEfetivadas = ViewBag.SubcategoriasEfetivadasIds as HashSet<int> ?? new HashSet<int>();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="page-title text-danger">Painel do Administrador - Revisão Final</h2>
+    <h2 class="page-title text-danger">
+        <i class="bi bi-shield-check"></i> Painel do Administrador - Revisão da Baseline
+    </h2>
+    <span class="badge @(Model.Status == "PENDENTE_APROVACAO" ? "bg-warning text-dark" : "bg-secondary") fs-6 px-3 py-2">
+        Status: @(Model.Status == "PENDENTE_APROVACAO" ? "PENDENTE DE APROVAÇÃO" : Model.Status)
+    </span>
 </div>
 
-<div class="alert alert-warning border-warning">
-    <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Atenção: Ação Irreversível</h4>
-    <p>Ao aprovar este cenário (<strong>@Model.Nome</strong>), ele se tornará o novo <strong>Cenário Atual (Vigente)</strong> da corporação. O cenário vigente anterior será permanentemente arquivado para fins de auditoria histórica.</p>
-    <hr>
-    <p class="mb-0 fw-bold">O progresso de avaliação deste cenário está em: @ViewBag.Progresso%</p>
+<div class="alert alert-warning border-warning shadow-sm mb-4">
+    <h5 class="alert-heading fw-bold mb-1"><i class="bi bi-info-circle-fill"></i> Avaliação Modular da Baseline</h5>
+    <p class="mb-0">
+        Você pode avaliar e aprovar a efetivação de cada subcategoria individualmente abaixo através do botão <strong>"Aprovar Efetivação"</strong>, ou aprovar todo o cenário de uma só vez no final da página.
+        As subcategorias aprovadas serão promovidas imediatamente para o <strong>Cenário Atual (Baseline Vigente)</strong>.
+    </p>
 </div>
+
+@if (TempData["Sucesso"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Sucesso!</strong> @TempData["Sucesso"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
 
 @if (TempData["Erro"] != null)
 {
-    <div class="alert alert-danger">@TempData["Erro"]</div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Atenção:</strong> @TempData["Erro"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 
+<!-- Resumo do Cenário -->
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-body">
-        <h5 class="card-title">Resumo do Cenário: @Model.Nome</h5>
-        <ul class="list-group list-group-flush mb-4">
-            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                Data de Criação:
-                <span class="badge bg-secondary rounded-pill">@Model.DataCriacao.ToString("dd/MM/yyyy HH:mm")</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                Itens Avaliados:
-                <span class="badge bg-primary rounded-pill">@Model.Avaliacoes.Count</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                Metas Definidas como Tier 4 (Adaptável):
-                <span class="badge bg-success rounded-pill">@Model.Avaliacoes.Count(a => a.TierAlvo == "TIER_4")</span>
-            </li>
-        </ul>
-
-        @if (Model.Avaliacoes.Any())
-        {
-            <h6 class="fw-bold mt-4 mb-2 text-dark">Subcategorias com Metas Definidas para Efetivação:</h6>
-            <div class="table-responsive mb-4">
-                <table class="table table-sm table-bordered table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width: 120px;">Subcategoria</th>
-                            <th style="width: 120px;">Prioridade</th>
-                            <th style="width: 140px;">Tier Alvo</th>
-                            <th>Políticas e Processos Alvo</th>
-                            <th>Práticas Internas Alvo</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var av in Model.Avaliacoes.OrderBy(a => a.Subcategoria?.Codigo))
-                        {
-                            <tr>
-                                <td class="fw-bold text-primary">@(av.Subcategoria?.Codigo ?? $"ID {av.SubcategoriaId}")</td>
-                                <td><span class="badge bg-secondary">@av.PrioridadeAlvo</span></td>
-                                <td><span class="badge bg-info text-dark">@av.TierAlvo</span></td>
-                                <td class="small text-muted">@(string.IsNullOrEmpty(av.PoliticasAlvo) ? "-" : av.PoliticasAlvo)</td>
-                                <td class="small text-muted">@(string.IsNullOrEmpty(av.PraticasAlvo) ? "-" : av.PraticasAlvo)</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+        <div class="row g-3 text-center text-md-start">
+            <div class="col-md-3 border-end">
+                <span class="text-muted small">Cenário Alvo</span>
+                <h5 class="fw-bold mb-0 text-dark">@Model.Nome</h5>
+                <span class="text-muted small">Criado em @Model.DataCriacao.ToString("dd/MM/yyyy HH:mm")</span>
             </div>
-        }
+            <div class="col-md-3 border-end">
+                <span class="text-muted small">Total de Subcategorias</span>
+                <h4 class="fw-bold text-primary mb-0">@Model.Avaliacoes.Count</h4>
+                <span class="small text-muted">@Model.Avaliacoes.Count(a => !string.IsNullOrEmpty(a.TierAlvo)) com metas definidas</span>
+            </div>
+            <div class="col-md-3 border-end">
+                <span class="text-muted small">Já Efetivadas no Atual</span>
+                <h4 class="fw-bold text-success mb-0">@subcategoriasEfetivadas.Count</h4>
+                <span class="small text-muted">Vigentes no Cenário Atual</span>
+            </div>
+            <div class="col-md-3">
+                <span class="text-muted small">Progresso do Alvo</span>
+                <h4 class="fw-bold text-dark mb-0">@ViewBag.Progresso%</h4>
+                <div class="progress mt-1" style="height: 6px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: @ViewBag.Progresso%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        <div class="d-flex gap-3 justify-content-end">
-            <!-- Botão Rejeitar -->
-            <form asp-action="Rejeitar" asp-controller="Aprovacao" method="post" onsubmit="return confirm('Tem certeza que deseja DEVOLVER este cenário para os Editores?');">
+<!-- Lista de Subcategorias Avaliadas com Todas as Informações -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold text-dark mb-0">
+        Subcategorias Submetidas para Aprovação (@Model.Avaliacoes.Count)
+    </h4>
+</div>
+
+@if (!Model.Avaliacoes.Any())
+{
+    <div class="alert alert-light border text-center py-4">
+        <p class="text-muted mb-0">Nenhuma subcategoria foi registrada neste cenário ainda.</p>
+    </div>
+}
+else
+{
+    var avaliacoesOrdenadas = Model.Avaliacoes
+        .OrderByDescending(a => !string.IsNullOrEmpty(a.TierAlvo))
+        .ThenBy(a => a.Subcategoria?.Codigo)
+        .ToList();
+
+    @foreach (var av in avaliacoesOrdenadas)
+    {
+        var isEfetivada = subcategoriasEfetivadas.Contains(av.SubcategoriaId);
+        var temMeta = !string.IsNullOrEmpty(av.TierAlvo);
+        var subcat = av.Subcategoria;
+        var categoria = subcat?.Categoria;
+        var funcao = categoria?.Funcao;
+
+        <div class="card shadow-sm border-0 mb-3" id="card_subcat_@av.SubcategoriaId">
+            <!-- Cabeçalho do Card -->
+            <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center py-2 px-3 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold fs-5 text-dark">@(subcat?.Codigo ?? $"ID {av.SubcategoriaId}")</span>
+                    @if (funcao != null && categoria != null)
+                    {
+                        <span class="badge" style="background-color: @(funcao.Cor ?? "#6c757d");">@funcao.Codigo - @categoria.Codigo</span>
+                        <span class="text-muted small d-none d-md-inline">@categoria.Nome</span>
+                    }
+                </div>
+                
+                <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+                    <!-- Status Badge -->
+                    @if (isEfetivada)
+                    {
+                        <span class="badge bg-success py-2 px-3" id="badge_aprov_@av.SubcategoriaId">
+                            <i class="bi bi-shield-check"></i> EFETIVADO NO ATUAL (VIGENTE)
+                        </span>
+                    }
+                    else if (temMeta)
+                    {
+                        <span class="badge bg-warning text-dark py-2 px-3" id="badge_aprov_@av.SubcategoriaId">
+                            <i class="bi bi-clock-history"></i> AGUARDANDO APROVAÇÃO
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary py-2 px-3" id="badge_aprov_@av.SubcategoriaId">
+                            METAS NÃO PREENCHIDAS
+                        </span>
+                    }
+
+                    <!-- Botão de Aprovação Modular -->
+                    @if (isEfetivada)
+                    {
+                        <button class="btn btn-sm btn-outline-success fw-bold" id="btn_aprov_@av.SubcategoriaId" disabled>
+                            <i class="bi bi-check-all"></i> Efetivado na Baseline
+                        </button>
+                    }
+                    else if (temMeta)
+                    {
+                        <button class="btn btn-sm btn-success fw-bold px-3" id="btn_aprov_@av.SubcategoriaId" onclick="aprovarSubcategoria(@Model.Id, @av.SubcategoriaId)">
+                            <span id="spinner_aprov_@av.SubcategoriaId" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-check-circle"></i> Aprovar Efetivação
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-sm btn-outline-secondary" disabled title="Defina as metas no Cenário Alvo antes de aprovar">
+                            Sem Metas
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Corpo do Card: Todas as Informações Passadas do Cenário Alvo -->
+            <div class="card-body p-3">
+                <!-- Descrição Oficial NIST -->
+                @if (!string.IsNullOrEmpty(subcat?.Descricao))
+                {
+                    <p class="small text-muted mb-3 fst-italic border-start border-3 ps-2 border-danger">
+                        @subcat.Descricao
+                    </p>
+                }
+
+                <div class="row g-3">
+                    <!-- Coluna 1: Metas Principais (Prioridade e Tier) -->
+                    <div class="col-md-3 border-end">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-uppercase text-muted mb-1 d-block">Prioridade Alvo</label>
+                            @if (!string.IsNullOrEmpty(av.PrioridadeAlvo))
+                            {
+                                var corPrioridade = av.PrioridadeAlvo switch {
+                                    "ALTA" => "bg-danger",
+                                    "MEDIA" => "bg-warning text-dark",
+                                    "BAIXA" => "bg-info text-dark",
+                                    _ => "bg-secondary"
+                                };
+                                <span class="badge @corPrioridade fs-6 px-3 py-1">@av.PrioridadeAlvo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-light text-muted border">Não definida</span>
+                            }
+                        </div>
+
+                        <div>
+                            <label class="form-label small fw-bold text-uppercase text-muted mb-1 d-block">Tier CSF Alvo</label>
+                            @if (!string.IsNullOrEmpty(av.TierAlvo))
+                            {
+                                var nomeTier = av.TierAlvo switch {
+                                    "TIER_1" => "Tier 1: Parcial",
+                                    "TIER_2" => "Tier 2: Informado",
+                                    "TIER_3" => "Tier 3: Repetível",
+                                    "TIER_4" => "Tier 4: Adaptável",
+                                    _ => av.TierAlvo
+                                };
+                                <span class="badge bg-primary fs-6 px-3 py-1">@nomeTier</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-light text-muted border">Não definido</span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Coluna 2: Políticas e Práticas Alvo -->
+                    <div class="col-md-4 border-end">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-uppercase text-muted mb-1">Políticas e Processos Alvo</label>
+                            <div class="p-2 bg-light border rounded small" style="min-height: 48px; white-space: pre-wrap;">@(string.IsNullOrEmpty(av.PoliticasAlvo) ? "-" : av.PoliticasAlvo)</div>
+                        </div>
+
+                        <div>
+                            <label class="form-label small fw-bold text-uppercase text-muted mb-1">Práticas Internas Alvo</label>
+                            <div class="p-2 bg-light border rounded small" style="min-height: 48px; white-space: pre-wrap;">@(string.IsNullOrEmpty(av.PraticasAlvo) ? "-" : av.PraticasAlvo)</div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna 3: Papéis e Referências Informativas Alvo -->
+                    <div class="col-md-5">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-uppercase text-muted mb-1">Papéis e Responsabilidades Alvo</label>
+                            <div class="p-2 bg-light border rounded small" style="min-height: 48px; white-space: pre-wrap;">@(string.IsNullOrEmpty(av.ResponsabilidadesAlvo) ? "-" : av.ResponsabilidadesAlvo)</div>
+                        </div>
+
+                        <div>
+                            <label class="form-label small fw-bold text-uppercase text-muted mb-1">Referências Informativas Alvo</label>
+                            <div class="p-2 bg-light border rounded small" style="min-height: 48px; white-space: pre-wrap;">@(string.IsNullOrEmpty(av.ReferenciasAlvo) ? "-" : av.ReferenciasAlvo)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<!-- Botões de Ação Global -->
+<div class="card shadow-sm border-0 mt-4 mb-5">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <form asp-action="Rejeitar" asp-controller="Aprovacao" method="post" onsubmit="return confirm('Tem certeza que deseja DEVOLVER este cenário para os Editores ajustarem as metas?');">
                 <input type="hidden" name="id" value="@Model.Id" />
                 <button type="submit" class="btn btn-outline-danger">
-                    Devolver / Rejeitar
+                    <i class="bi bi-arrow-return-left"></i> Devolver / Rejeitar Cenário para Elaboração
                 </button>
             </form>
+        </div>
 
-            <!-- Botão Aprovar e Efetivar -->
-            <form asp-action="Efetivar" asp-controller="Aprovacao" method="post" onsubmit="return confirm('Você está prestes a APROVAR e EFETIVAR o novo Baseline de Segurança. Confirma?');">
+        <div>
+            <form asp-action="Efetivar" asp-controller="Aprovacao" method="post" onsubmit="return confirm('Deseja APROVAR e EFETIVAR todas as subcategorias avaliadas deste cenário como o novo Baseline Vigente?');">
                 <input type="hidden" name="id" value="@Model.Id" />
-                <button type="submit" class="btn btn-success fw-bold px-4">
-                    <i class="bi bi-check-circle"></i> Aprovar e Efetivar Cenário
+                <button type="submit" class="btn btn-cptm fw-bold px-4 py-2">
+                    <i class="bi bi-check-circle-fill"></i> Aprovar Todas as Subcategorias Pendentes
                 </button>
             </form>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        async function aprovarSubcategoria(cenarioId, subcategoriaId) {
+            if (!confirm("Confirmar a APROVAÇÃO e EFETIVAÇÃO desta subcategoria na Baseline do Cenário Atual?")) {
+                return;
+            }
+
+            const spinner = document.getElementById(`spinner_aprov_${subcategoriaId}`);
+            const badge = document.getElementById(`badge_aprov_${subcategoriaId}`);
+            const btn = document.getElementById(`btn_aprov_${subcategoriaId}`);
+
+            if (spinner) spinner.classList.remove('d-none');
+            if (btn) btn.disabled = true;
+
+            try {
+                const response = await fetch('@Url.Action("AprovarSubcategoria", "Aprovacao")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ CenarioId: cenarioId, SubcategoriaId: subcategoriaId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    if (badge) {
+                        badge.className = 'badge bg-success py-2 px-3';
+                        badge.innerHTML = '<i class="bi bi-shield-check"></i> EFETIVADO NO ATUAL (VIGENTE)';
+                    }
+                    if (btn) {
+                        btn.className = 'btn btn-sm btn-outline-success fw-bold';
+                        btn.innerHTML = '<i class="bi bi-check-all"></i> Efetivado na Baseline';
+                        btn.disabled = true;
+                    }
+                    alert("Sucesso: " + result.message);
+                } else {
+                    alert("Atenção: " + result.message);
+                    if (btn) btn.disabled = false;
+                }
+            } catch (error) {
+                alert("Falha na comunicação ao aprovar a subcategoria.");
+                if (btn) btn.disabled = false;
+            } finally {
+                if (spinner) spinner.classList.add('d-none');
+            }
+        }
+    </script>
+}

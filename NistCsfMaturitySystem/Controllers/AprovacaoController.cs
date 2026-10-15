@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NistCsfMaturitySystem.Data;
+using NistCsfMaturitySystem.Models;
 using NistCsfMaturitySystem.Services;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,17 +27,32 @@ namespace NistCsfMaturitySystem.Controllers
             var cenarioAlvo = await _context.Cenarios
                 .Include(c => c.Avaliacoes)
                     .ThenInclude(a => a.Subcategoria)
-                .FirstOrDefaultAsync(c => c.Tipo == "ALVO" && c.Status == "PENDENTE_APROVACAO");
+                        .ThenInclude(s => s.Categoria)
+                            .ThenInclude(cat => cat.Funcao)
+                .FirstOrDefaultAsync(c => c.Tipo == "ALVO" && (c.Status == "PENDENTE_APROVACAO" || c.Status == "EM_ELABORACAO"));
 
             if (cenarioAlvo == null)
             {
-                ViewBag.Mensagem = "Não há nenhum Cenário Alvo aguardando aprovação no momento.";
+                ViewBag.Mensagem = "Não há nenhum Cenário Alvo com metas para revisão no momento.";
                 return View("Vazio");
             }
 
             var totalSubcategorias = await _context.NistSubcategorias.CountAsync(s => s.Status == "ATIVO");
+            var itensComMeta = cenarioAlvo.Avaliacoes.Count(a => !string.IsNullOrEmpty(a.TierAlvo));
             
-            ViewBag.Progresso = (cenarioAlvo.Avaliacoes.Count * 100) / (totalSubcategorias == 0 ? 1 : totalSubcategorias);
+            ViewBag.Progresso = (itensComMeta * 100) / (totalSubcategorias == 0 ? 1 : totalSubcategorias);
+
+            // Obter subcategorias que já foram aprovadas e estão ativas no Cenário Atual
+            var cenarioAtual = await _context.Cenarios
+                .Include(c => c.Avaliacoes)
+                .FirstOrDefaultAsync(c => c.Tipo == "ATUAL" && c.Status == "VIGENTE");
+
+            var subcategoriasEfetivadasIds = cenarioAtual?.Avaliacoes
+                .Where(a => !string.IsNullOrEmpty(a.TierAlvo))
+                .Select(a => a.SubcategoriaId).ToHashSet() ?? new HashSet<int>();
+
+            ViewBag.SubcategoriasEfetivadasIds = subcategoriasEfetivadasIds;
+            ViewBag.CenarioAtual = cenarioAtual;
             
             return View(cenarioAlvo);
         }
@@ -80,5 +96,93 @@ namespace NistCsfMaturitySystem.Controllers
             
             return RedirectToAction("Revisar");
         }
+
+        // Endpoint AJAX para Aprovação e Efetivação Modular de Subcategoria pelo Administrador
+        [HttpPost]
+        public async Task<IActionResult> AprovarSubcategoria([FromBody] AprovarSubcategoriaDto dto)
+        {
+            if (dto == null)
+                return BadRequest(new { success = false, message = "Dados inválidos." });
+
+            var adminUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.Nome == "Marcelo Frota"); 
+            var adminId = adminUser?.Id ?? 1;
+
+            var avaliacaoAlvo = await _context.AvaliacoesSubcategoria
+                .Include(a => a.Subcategoria)
+                .FirstOrDefaultAsync(a => a.CenarioId == dto.CenarioId && a.SubcategoriaId == dto.SubcategoriaId);
+
+            if (avaliacaoAlvo == null)
+                return BadRequest(new { success = false, message = "Avaliação da subcategoria não encontrada no Cenário Alvo." });
+
+            if (string.IsNullOrWhiteSpace(avaliacaoAlvo.TierAlvo))
+                return BadRequest(new { success = false, message = "Esta subcategoria não possui metas definidas (Tier Alvo está vazio)." });
+
+            // 1. Localizar ou criar o Cenário Atual Vigente
+            var cenarioAtual = await _context.Cenarios
+                .Include(c => c.Avaliacoes)
+                .FirstOrDefaultAsync(c => c.Tipo == "ATUAL" && c.Status == "VIGENTE");
+
+            if (cenarioAtual == null)
+            {
+                cenarioAtual = new Cenario
+                {
+                    Nome = "CENÁRIO ATUAL (BASELINE VIGENTE)",
+                    Tipo = "ATUAL",
+                    Status = "VIGENTE",
+                    DataCriacao = DateTime.Now,
+                    DataEfetivacao = DateTime.Now,
+                    CriadoPorId = adminId
+                };
+                _context.Cenarios.Add(cenarioAtual);
+                await _context.SaveChangesAsync();
+            }
+
+            // 2. Atualizar ou criar a subcategoria no Cenário Atual com as metas aprovadas
+            var avaliacaoAtual = await _context.AvaliacoesSubcategoria
+                .FirstOrDefaultAsync(a => a.CenarioId == cenarioAtual.Id && a.SubcategoriaId == dto.SubcategoriaId);
+
+            if (avaliacaoAtual == null)
+            {
+                avaliacaoAtual = new AvaliacaoSubcategoria
+                {
+                    CenarioId = cenarioAtual.Id,
+                    SubcategoriaId = dto.SubcategoriaId,
+                    PrioridadeAlvo = avaliacaoAlvo.PrioridadeAlvo,
+                    TierAlvo = avaliacaoAlvo.TierAlvo,
+                    PoliticasAlvo = avaliacaoAlvo.PoliticasAlvo,
+                    PraticasAlvo = avaliacaoAlvo.PraticasAlvo,
+                    ResponsabilidadesAlvo = avaliacaoAlvo.ResponsabilidadesAlvo,
+                    ReferenciasAlvo = avaliacaoAlvo.ReferenciasAlvo
+                };
+                _context.AvaliacoesSubcategoria.Add(avaliacaoAtual);
+            }
+            else
+            {
+                avaliacaoAtual.PrioridadeAlvo = avaliacaoAlvo.PrioridadeAlvo;
+                avaliacaoAtual.TierAlvo = avaliacaoAlvo.TierAlvo;
+                avaliacaoAtual.PoliticasAlvo = avaliacaoAlvo.PoliticasAlvo;
+                avaliacaoAtual.PraticasAlvo = avaliacaoAlvo.PraticasAlvo;
+                avaliacaoAtual.ResponsabilidadesAlvo = avaliacaoAlvo.ResponsabilidadesAlvo;
+                avaliacaoAtual.ReferenciasAlvo = avaliacaoAlvo.ReferenciasAlvo;
+                _context.AvaliacoesSubcategoria.Update(avaliacaoAtual);
+            }
+
+            cenarioAtual.DataEfetivacao = DateTime.Now;
+            _context.Cenarios.Update(cenarioAtual);
+
+            await _context.SaveChangesAsync();
+
+            var codigoSubcat = avaliacaoAlvo.Subcategoria?.Codigo ?? $"ID {dto.SubcategoriaId}";
+            return Ok(new { 
+                success = true, 
+                message = $"Subcategoria {codigoSubcat} aprovada e efetivada com sucesso no Cenário Atual (Baseline Vigente)!" 
+            });
+        }
+    }
+
+    public class AprovarSubcategoriaDto
+    {
+        public int CenarioId { get; set; }
+        public int SubcategoriaId { get; set; }
     }
 }
